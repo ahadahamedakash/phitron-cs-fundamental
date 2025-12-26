@@ -21,6 +21,7 @@ void insert_at_tail(Node *&head, Node *&tail, int val)
     if (head == NULL)
     {
         head = newNode;
+        tail = newNode;
         return;
     }
 
@@ -40,15 +41,20 @@ void print_linked_list(Node *head)
 
 int main()
 {
-    Node *head = new Node(0);
-    Node *a = new Node(10);
-    Node *tail = new Node(20);
+    Node *head = NULL;
+    Node *tail = NULL;
 
-    head->next = a;
-    a->next = tail;
+    int val;
+    while (true)
+    {
+        cin >> val;
+        if (val == -1)
+        {
+            break;
+        }
 
-    insert_at_tail(head, tail, 30);
-    insert_at_tail(head, tail, 40);
+        insert_at_tail(head, tail, val);
+    }
 
     print_linked_list(head);
 
