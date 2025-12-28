@@ -4,6 +4,27 @@ using namespace std;
 
 int main()
 {
+    int n;
+    cin >> n;
+
+    vector<long long> v(n), sumArr(n);
+
+    for (int i = 0; i < n; i++)
+    {
+        cin >> v[i];
+    }
+
+    sumArr[0] = v[0];
+
+    for (int i = 1; i < n; i++)
+    {
+        sumArr[i] = sumArr[i - 1] + v[i];
+    }
+
+    for (int i = n - 1; i >= 0; i--)
+    {
+        cout << sumArr[i] << " ";
+    }
 
     return 0;
 }
