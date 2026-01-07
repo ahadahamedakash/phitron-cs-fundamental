@@ -9,10 +9,17 @@ int main()
 
     while (t--)
     {
-        int p, x;
-        cin >> p >> x;
+        int n, x;
+        cin >> n >> x;
 
-        p > x ? cout << "NO\n" : cout << "YES\n";
+        if (n <= x)
+        {
+            cout << "YES\n";
+        }
+        else
+        {
+            cout << "NO\n";
+        }
     }
 
     return 0;

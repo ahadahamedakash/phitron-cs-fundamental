@@ -10,9 +10,12 @@ int main()
     while (t--)
     {
         int n, m;
-        cin >> n >> m;
 
-        m <= n - 1 ? cout << "YES\n" : cout << "NO\n";
+        cin >> n >> m;
+        if (m <= n - 1)
+            cout << "YES\n";
+        else
+            cout << "NO\n";
     }
 
     return 0;
