@@ -30,7 +30,7 @@ public:
     {
         Node *newNode = new Node(val);
 
-        if (tail == NULL)
+        if (tail == NULL) // we can check also if head == NULL (because both will be NULL if the list is empty)
         {
             head = tail = newNode;
             tail->next = head;
@@ -57,6 +57,28 @@ public:
             newNode->next = head;
             tail->next = newNode;
             tail = newNode;
+        }
+    }
+
+    void delete_at_head()
+    {
+        if (head == NULL)
+            return;
+
+        if (head == tail) // single node
+        {
+            delete head;
+            head = tail = NULL;
+        }
+        else // 2 or more nodes
+        {
+            Node *temp = head;
+
+            head = head->next;
+            tail->next = head;
+
+            temp->next = NULL;
+            delete temp;
         }
     }
 
@@ -88,6 +110,8 @@ int main()
     cll.insert_at_head(1);
     cll.insert_at_tail(2);
     cll.insert_at_tail(3);
+
+    cll.delete_at_head();
 
     cll.print();
 
