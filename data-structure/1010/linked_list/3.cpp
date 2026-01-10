@@ -82,6 +82,34 @@ public:
         }
     }
 
+    void delete_at_tail()
+    {
+        if (head == NULL) // empty list
+        {
+            return;
+        }
+        else if (head == tail) // single node
+        {
+            delete head;
+            head = tail = NULL;
+        }
+        else // 2 or more nodes
+        {
+            Node *temp = tail;
+
+            Node *pre = head;
+            while (pre->next != tail)
+            {
+                pre = pre->next;
+            }
+
+            tail = pre;
+            tail->next = head;
+            temp->next = NULL;
+            delete temp;
+        }
+    }
+
     void print()
     {
         if (head == NULL)
@@ -111,7 +139,9 @@ int main()
     cll.insert_at_tail(2);
     cll.insert_at_tail(3);
 
-    cll.delete_at_head();
+    // cll.delete_at_head();
+    cll.delete_at_tail();
+    // cll.delete_at_tail();
 
     cll.print();
 
