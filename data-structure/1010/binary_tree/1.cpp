@@ -63,6 +63,28 @@ void postorder_traverste(Node *root)
     cout << root->data << " ";
 }
 
+void levelorder_traverse(Node *root)
+{
+    queue<Node *> q;
+
+    q.push(root);
+
+    while (q.size() > 0)
+    {
+        Node *curr = q.front();
+        q.pop();
+
+        cout << curr->data << " ";
+
+        if (curr->left)
+            q.push(curr->left);
+        if (curr->right)
+            q.push(curr->right);
+    }
+
+    cout << endl;
+}
+
 int main()
 {
     vector<int> preorder = {1, 2, -1, -1, 3, 4, -1, -1, 5, -1, -1}; // root -> left -> right
@@ -84,6 +106,11 @@ int main()
          << "Postorder Traverse: ";
 
     postorder_traverste(root);
+
+    cout << endl
+         << "Levelorder Traverse: ";
+
+    levelorder_traverse(root);
 
     return 0;
 }
