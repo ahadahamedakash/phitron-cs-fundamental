@@ -1,0 +1,7 @@
+I 1
+football 1
+football, 2
+he 1
+love 2
+loves 1
+we 1
