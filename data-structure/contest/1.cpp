@@ -6,21 +6,43 @@ int main()
 {
     long long n;
     cin >> n;
-    long long arr[n];
 
-    long long maxEven = INT_MIN;
+    long long first = LLONG_MIN;
+    long long second = LLONG_MIN;
+    long long third = LLONG_MIN;
 
     for (int i = 0; i < n; i++)
     {
-        cin >> arr[i];
-        if (arr[i] % 2 == 0)
-            maxEven = max(maxEven, arr[i]);
+        long long x;
+        cin >> x;
+
+        if (x > first)
+        {
+            third = second;
+            second = first;
+            first = x;
+        }
+        else if (x < first && x > second)
+        {
+            third = second;
+            second = x;
+        }
+        else if (x < second && x > third)
+        {
+            third = x;
+        }
     }
 
-    if (maxEven <= 0)
+    if (third == LLONG_MIN)
+    {
         cout << -1;
+    }
     else
-        cout << maxEven;
+    {
+        cout << "Largest: " << first << endl;
+        cout << "Second Largest: " << second << endl;
+        cout << "Third Largest: " << third << endl;
+    }
 
     return 0;
 }
