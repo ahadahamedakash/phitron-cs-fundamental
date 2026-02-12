@@ -7,13 +7,13 @@ bool visited[1005];
 int level[1005];
 int parent[1005];
 
-void bfs(int src, int dest)
+void bfs(int src)
 {
     queue<int> q;
     q.push(src);
     visited[src] = true;
     level[src] = 0;
-    parent[src] = -1; //
+    // parent[src] = -1; //
 
     while (!q.empty())
     {
@@ -53,14 +53,14 @@ int main()
     int src, dest;
 
     cin >> src >> dest;
-    bfs(src, dest);
+    bfs(src);
 
     for (int i = 0; i < n; i++)
     {
         cout << i << " parent -> " << parent[i] << endl;
     }
 
-    // cout << level[dest] << endl;
+    cout << level[dest] << endl;
 
     return 0;
 }
