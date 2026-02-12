@@ -55,12 +55,21 @@ int main()
     cin >> src >> dest;
     bfs(src);
 
-    for (int i = 0; i < n; i++)
+    int node = dest;
+
+    while (node != -1)
     {
-        cout << i << " parent -> " << parent[i] << endl;
+
+        cout << node << " ";
+        node = parent[node];
     }
 
-    cout << level[dest] << endl;
+    // for (int i = 0; i < n; i++)
+    // {
+    //     cout << i << " parent -> " << parent[i] << endl;
+    // }
+
+    // cout << level[dest] << endl;
 
     return 0;
 }
