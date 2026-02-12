@@ -1,1 +1,8 @@
+0 parent -> -1
+1 parent -> 0
+2 parent -> 3
+3 parent -> 1
+4 parent -> 1
+5 parent -> 3
+6 parent -> 4
 2
