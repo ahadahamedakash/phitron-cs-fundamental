@@ -5,22 +5,23 @@ using namespace std;
 bool cycle;
 bool visited[105];
 vector<int> adj_list[105];
-int parent[105];
+bool pathVisite[105];
 
 void dfs(int src)
 {
     visited[src] = true;
+    pathVisite[src] = true;
+
     for (int child : adj_list[src])
     {
-        if (visited[child] && parent[src] != child)
+        if (visited[child] && pathVisite[child])
             cycle = true;
 
         if (!visited[child])
-        {
-            parent[child] = src;
             dfs(child);
-        }
     }
+
+    pathVisite[src] = false;
 }
 
 int main()
@@ -33,11 +34,10 @@ int main()
         int a, b;
         cin >> a >> b;
         adj_list[a].push_back(b);
-        adj_list[b].push_back(a);
     }
 
     memset(visited, false, sizeof(visited));
-    memset(parent, -1, sizeof(parent));
+    memset(pathVisite, false, sizeof(pathVisite));
 
     cycle = false;
 
@@ -57,6 +57,9 @@ int main()
 
 /*
 INPUT:
-    2 1
-    1 0
+    4 4
+    0 1
+    1 2
+    2 3
+    0 3
 */
