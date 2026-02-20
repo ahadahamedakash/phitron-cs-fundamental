@@ -5,7 +5,7 @@ using namespace std;
 vector<pair<int, int>> adj_list[105];
 int dis[105];
 
-void dijkstra(int src) // O(VE)
+void dijkstra(int src) // O((V + E)log V) or E log V
 {
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
     pq.push({0, src});
