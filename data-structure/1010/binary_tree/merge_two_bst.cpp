@@ -33,6 +33,7 @@ Node *insert(Node *root, int val)
 Node *buildBST(vector<int> arr)
 {
     Node *root = NULL;
+
     for (int val : arr)
     {
         root = insert(root, val);
@@ -41,17 +42,31 @@ Node *buildBST(vector<int> arr)
     return root;
 }
 
-void inorder(Node *root, vector<int> arr)
+Node *buildBSTFromSorted(vector<int> arr, int st, int end)
+{
+    if (st > end)
+        return NULL;
+
+    int mid = st + (end - st) / 2;
+
+    Node *root = new Node(arr[mid]);
+    root->left = buildBSTFromSorted(arr, st, mid - 1);
+    root->right = buildBSTFromSorted(arr, mid + 1, end);
+
+    return root;
+}
+
+void inorder(Node *root, vector<int> &arr)
 {
     if (root == NULL)
         return;
 
-    inorder(root->left);
-    cout << root->data << " ";
-    inorder(root->right);
+    inorder(root->left, arr);
+    arr.push_back(root->data);
+    inorder(root->right, arr);
 }
 
-Node *merge2BST(Node *root1, Node *root2)
+Node *merge2BST(Node *root1, Node *root2) // O(m + n)
 {
     vector<int> arr1, arr2;
     inorder(root1, arr1);
@@ -61,25 +76,19 @@ Node *merge2BST(Node *root1, Node *root2)
     int i = 0, j = 0;
     while (i < arr1.size() && j < arr2.size())
     {
-        if (arr[i] < arr[j])
-        {
+        if (arr1[i] < arr2[j])
             temp.push_back(arr1[i++]);
-        }
         else
-        {
             temp.push_back(arr2[j++]);
-        }
     }
 
     while (i < arr1.size())
-    {
         temp.push_back(arr1[i++]);
-    }
 
     while (j < arr2.size())
-    {
         temp.push_back(arr2[j++]);
-    }
+
+    return buildBSTFromSorted(temp, 0, temp.size() - 1);
 }
 
 int main()
