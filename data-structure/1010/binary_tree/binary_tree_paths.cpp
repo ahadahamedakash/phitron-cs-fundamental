@@ -95,9 +95,7 @@ int main()
     allPaths(root, path, ans);
 
     for (string val : ans)
-    {
         cout << val << nl;
-    }
 
     return 0;
 }

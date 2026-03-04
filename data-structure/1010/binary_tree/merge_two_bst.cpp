@@ -35,9 +35,7 @@ Node *buildBST(vector<int> arr)
     Node *root = NULL;
 
     for (int val : arr)
-    {
         root = insert(root, val);
-    }
 
     return root;
 }

@@ -54,13 +54,9 @@ Node *deleteNode(Node *root, int key)
         return NULL;
 
     if (key < root->data)
-    {
         root->left = deleteNode(root->left, key);
-    }
     else if (key > root->data)
-    {
         root->right = deleteNode(root->right, key);
-    }
     else
     {
         if (root->left == NULL)
