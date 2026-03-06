@@ -47,17 +47,37 @@ int main()
         }
     }
 
+    bool cycle = false;
     for (int i = 0; i < n; i++)
+        if (adj_mat[i][i] < 0)
+            cycle = true;
+
+    if (cycle)
+        cout << "Cycle detedted";
+    else
     {
-        for (int j = 0; j < n; j++)
+        for (int i = 0; i < n; i++)
         {
-            if (adj_mat[i][j] == INT_MAX)
-                cout << "INF ";
-            else
-                cout << adj_mat[i][j] << " ";
+            for (int j = 0; j < n; j++)
+            {
+                if (adj_mat[i][j] == INT_MAX)
+                    cout << "INF ";
+                else
+                    cout << adj_mat[i][j] << " ";
+            }
+            cout << endl;
         }
-        cout << endl;
     }
 
     return 0;
 }
+
+/*
+INPUT:
+    4 5
+    0 1 5
+    1 2 2
+    2 3 -4
+    3 1 1
+    0 3 10
+*/
