@@ -40,17 +40,17 @@ int main()
 
     int t;
     cin >> t;
-    // vector<int> q(t);
-    int q[t];
+    // int q[t];
+    vector<int> q(t);
     for (int i = 0; i < t; i++)
         cin >> q[i];
 
-    for (int i = 0; i < n; i++)
+    for (int i = 1; i <= n; i++)
         dist[i] = LLONG_MAX;
 
     dist[src] = 0;
 
-    for (int i = 1; i <= n; i++)
+    for (int i = 1; i <= n - 1; i++)
     {
         for (auto ed : edge_list)
         {
