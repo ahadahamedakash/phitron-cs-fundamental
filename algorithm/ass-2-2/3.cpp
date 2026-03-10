@@ -6,8 +6,8 @@
 
 using namespace std;
 
-int parent[1005];
-int groupSize[1005];
+int parent[100005];
+int groupSize[100005];
 
 int find(int node)
 {
@@ -41,7 +41,7 @@ int main()
     fastIO();
 
     memset(parent, -1, sizeof(parent));
-    for (int i = 0; i < 1005; i++)
+    for (int i = 0; i < 100005; i++)
         groupSize[i] = 1;
 
     int n, e;
@@ -67,3 +67,15 @@ int main()
 
     return 0;
 }
+
+/*
+INPUT:
+    5 7
+    1 2
+    2 3
+    3 4
+    4 5
+    4 1
+    2 4
+    5 3
+*/
