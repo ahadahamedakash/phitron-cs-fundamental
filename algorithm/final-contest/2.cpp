@@ -24,9 +24,7 @@ int main()
             int cnt = s[i + 1] - '0';
 
             for (int j = 0; j < cnt; j++)
-            {
                 cout << ch;
-            }
         }
 
         cout << nl;
