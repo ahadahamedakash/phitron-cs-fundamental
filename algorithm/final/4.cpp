@@ -15,9 +15,7 @@ int knapsack(int i, int lim)
         return 0;
 
     if (dp[i][lim] != -1)
-    {
         return dp[i][lim];
-    }
 
     if (weight[i] <= lim)
     {

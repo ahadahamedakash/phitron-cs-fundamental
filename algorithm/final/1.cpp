@@ -35,6 +35,7 @@ int main()
         0 <= n <=30
     */
     cin >> n;
+
     cout << tetranachi(n) << nl;
 
     return 0;
