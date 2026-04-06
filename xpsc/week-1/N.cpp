@@ -10,52 +10,77 @@ int main()
 {
     fastIO();
 
-    int n;
-    cin >> n;
-    vector<int> v1(n);
-    for (int i = 0; i < n; i++)
-        cin >> v1[i];
+    int t;
+    cin >> t;
 
-    for (int i = 0; i < n; i++)
+    while (t--)
     {
-        vector<int> v2(v1);
         int n;
-        string s;
-        cin >> n >> s;
+        cin >> n;
+
+        vector<int> v(n);
+        for (int i = 0; i < n; i++)
+            cin >> v[i];
 
         for (int i = 0; i < n; i++)
         {
-            if (s[i] == 'D')
-            {
-                if (v2[i] == 9)
-                {
-                    v2[i] = 0;
-                }
-                else
-                {
-                    v2[i]++;
-                }
-            }
-            else if (s[i] == 'U')
-            {
-                if (v2[i] == '1')
-                {
-                    v2[i] = 0;
-                }
-                else
-                {
-                    v2[i]--;
-                }
-            }
+            int x;
+            string s;
+            cin >> x >> s;
 
-            for (int i = 0; i < n; i++)
+            for (int j = 0; j < x; j++)
             {
-                cout << v2[i] << " ";
+                if (s[j] == 'D')
+                {
+                    if (v[i] == 9)
+                        v[i] = 0;
+                    else
+                        v[i]++;
+                }
+                else if (s[j] == 'U')
+                {
+                    if (v[i] == 0)
+                        v[i] = 9;
+                    else
+                        v[i]--;
+                }
             }
         }
+
+        for (int i = 0; i < n; i++)
+            cout << v[i] << " ";
 
         cout << nl;
     }
 
     return 0;
 }
+
+/*
+INPUT:
+    3
+    3
+    9 3 1
+    3 DDD
+    4 UDUU
+    2 DU
+    2
+    0 9
+    9 DDDDDDDDD
+    9 UUUUUUUUU
+    5
+    0 5 9 8 3
+    10 UUUUUUUUUU
+    3 UUD
+    8 UUDUUDDD
+    10 UUDUUDUDDU
+    4 UUUU
+*/
+
+/*
+OPTIMIZATION:
+if (s[j] == 'D')
+    v2[i] = (v2[i] + 1) % 10;
+else
+    v2[i] = (v2[i] - 1 + 10) % 10;
+*/
