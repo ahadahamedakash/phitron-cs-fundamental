@@ -14,14 +14,33 @@ int main()
     cin >> n >> x;
 
     vector<int> v(n);
+    set<int> s;
+
     for (int i = 0; i < n; i++)
+    {
         cin >> v[i];
+        s.insert(v[i]);
+    }
 
-    sort(v.begin(), v.end());
+    if (x == 0)
+    {
+        if (s.count(0))
+            cout << 1 << nl;
+        else
+            cout << 0 << nl;
+        return 0;
+    }
 
-    for (int i = 0; i < n; i++)
-        cout << v[i] << " ";
-    cout << nl;
+    int missing = 0;
+    for (int i = 0; i < x; i++)
+    {
+        if (!s.count(i))
+            missing++;
+    }
+
+    int shouldRemove = s.count(x) ? 1 : 0;
+
+    cout << missing + shouldRemove << nl;
 
     return 0;
 }
