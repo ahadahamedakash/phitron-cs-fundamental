@@ -12,6 +12,58 @@ int main()
 
     int n;
     cin >> n;
+    unordered_map<ll, ll> mp;
+    ll x;
+
+    for (ll i = 0; i < n; i++)
+    {
+        cin >> x;
+        mp[x]++;
+    }
+
+    ll cnt = 0;
+
+    for (auto &it : mp)
+        cnt = max(cnt, (ll)it.second);
+
+    cout << cnt << nl;
+
+    return 0;
+}
+
+/*
+int main1()
+{
+    fastIO();
+
+    int n;
+    cin >> n;
+    unordered_map<int, int> mp;
+    mp.reserve(n);
+
+    int x;
+    int cnt = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        cin >> x;
+        cnt = max(cnt, ++mp[x]);
+    }
+
+    cout << cnt << nl;
+
+    return 0;
+}
+*/
+
+/*
+
+int main()
+{
+    fastIO();
+
+    int n;
+    cin >> n;
     vector<ll> v(n);
     unordered_map<ll, ll> mp;
     for (ll i = 0; i < n; i++)
@@ -29,3 +81,5 @@ int main()
 
     return 0;
 }
+
+*/
