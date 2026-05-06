@@ -15,29 +15,26 @@ int main()
 
     while (t--)
     {
-        int n;
-        cin >> n;
+        int n, x;
+        cin >> n >> x;
         vector<int> v(n);
         for (int &i : v)
             cin >> i;
 
-        int cnt = 0;
+        sort(v.rbegin(), v.rend());
 
-        map<int, int> freq;
-
-        for (int i = 0; i < n; ++i)
+        int candy = 0;
+        for (int val : v)
         {
-            int key = v[i] - i;
-            cnt += freq[key];
-            freq[key]++;
+            if (val % x == 0)
+            {
+                candy = val;
+                break;
+            }
         }
 
-        cout << cnt << nl;
+        cout << candy << nl;
     }
 
     return 0;
 }
-
-/*
-    LINK: https://www.codechef.com/problems/EQSUM
-*/

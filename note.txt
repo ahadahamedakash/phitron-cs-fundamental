@@ -1,0 +1,6 @@
+Binary search on result
+
+https://codeforces.com/gym/106118/problem/C
+https://atcoder.jp/contests/abc382/tasks/abc382_c
+https://codeforces.com/contest/2014/problem/C
+https://atcoder.jp/contests/abc368/tasks/abc368_c
