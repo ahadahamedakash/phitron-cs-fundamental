@@ -15,10 +15,19 @@ int main()
 
     while (t--)
     {
-        int n;
-        cin >> n;
-        string s;
-        cin >> s;
+        int n, k;
+        cin >> n >> k;
+        vector<int> v(n);
+        for (int &i : v)
+            cin >> i;
+
+        sort(v.rbegin(), v.rend());
+        int total = 0;
+
+        for (int i = 0; i < k; ++i)
+            total += v[i];
+
+        cout << total << nl;
     }
 
     return 0;
