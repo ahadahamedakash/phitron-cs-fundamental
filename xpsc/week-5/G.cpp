@@ -6,7 +6,7 @@
 
 using namespace std;
 
-int64_t main()
+int main()
 {
     fastIO();
 
@@ -18,16 +18,13 @@ int64_t main()
         ll n, m, x;
         cin >> n >> m >> x;
 
-        vector<vector<ll>> v(n, vector<ll>(m));
+        int r = (x % n);
+        if (r == 0)
+            r = n;
 
-        for (int i = 0; i < n; ++i)
-            for (int j = 0; j < m; ++j)
-                cin >> v[i][j];
+        int c = (x + n - 1) / n;
+        cout << (r - 1) * m + c << nl;
     }
 
     return 0;
 }
-
-/*
-    LINK: https://codeforces.com/problemset/problem/1506/A
-*/
