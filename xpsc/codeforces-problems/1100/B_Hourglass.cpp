@@ -30,3 +30,7 @@ int main()
 
     return 0;
 }
+
+/*
+    LINK: https://codeforces.com/problemset/problem/2184/B
+*/

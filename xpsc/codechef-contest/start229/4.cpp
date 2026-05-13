@@ -17,22 +17,30 @@ int main()
     {
         int n;
         cin >> n;
-        int zeroCnt = 0;
-        vector<int> v(n);
-        for (int &i : v)
+
+        vector<pair<int, int>> v(n);
+        for (int i = 0; i < n; ++i)
         {
-            cin >> i;
-            if (i == 0)
-                zeroCnt++;
+            int x;
+            cin >> x;
+            v[i].first = x;
+            v[i].second = i + 1;
         }
 
-        if (n == zeroCnt)
+        sort(v.rbegin(), v.rend());
+
+        if (v[0].first == 0)
         {
             cout << -1 << nl;
             continue;
         }
-        cout << "HAs answer" << nl;
+
+        cout << v[0].second << " " << v[1].second << " " << v[2].second << nl;
     }
 
     return 0;
 }
+
+/*
+    LINK: https://www.codechef.com/problems/NOTSUM
+*/
