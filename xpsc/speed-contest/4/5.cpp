@@ -15,27 +15,22 @@ int main()
     fastIO();
 
     int t;
-    t = 1;
     cin >> t;
-
     while (t--)
     {
         int n;
         cin >> n;
         vector<int> v(n);
 
-        int oddCnt = 0, evenCnt = 0;
+        for (int &i : v)
+            cin >> i;
 
+        int oddCnt = 0;
         for (int i = 0; i < n; ++i)
-        {
-            cin >> v[i];
-            if (v[i] % 2 == 0)
-                evenCnt++;
-            else
+            if (v[i] % 2 != 0)
                 oddCnt++;
-        }
 
-        if (oddCnt == 1 && evenCnt == n - 1)
+        if (oddCnt == 1)
             yes;
         else
             no;
