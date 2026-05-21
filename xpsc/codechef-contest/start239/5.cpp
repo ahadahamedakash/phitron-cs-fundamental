@@ -23,52 +23,24 @@
 //         ll n, m, k;
 //         cin >> n >> m >> k;
 
-//         priority_queue<ll> pq;
+//         vector<ll> v(n);
 
-//         ll total = 0;
-
-//         for (int i = 0; i < n; i++)
+//         ll totalFlower = 0;
+//         for (int i = 0; i < n; ++i)
 //         {
-//             ll x;
-//             cin >> x;
-//             pq.push(x);
-//             total += x;
+//             cin >> v[i];
+//             totalFlower += v[i];
 //         }
 
-//         ll used = 0;
+//         // ll structureCapacity = k * (m / (k + 1)) + (m % (k + 1));
+//         ll structureCapacity = m - (m / (k + 1));
 
-//         while (!pq.empty())
-//         {
-//             vector<ll> temp;
-//             ll cnt = 0;
-
-//             while (cnt < k && !pq.empty())
-//             {
-//                 ll x = pq.top();
-//                 pq.pop();
-//                 if (x > 0)
-//                 {
-//                     used++;
-//                     x--;
-//                     if (x > 0)
-//                         temp.push_back(x);
-//                 }
-//                 cnt++;
-//             }
-
-//             for (ll x : temp)
-//                 pq.push(x);
-
-//             if (cnt == 0)
-//                 break;
-//         }
-
-//         cout << min({used, m, total}) << nl;
+//         cout << min(structureCapacity, totalFlower) << nl;
 //     }
 
 //     return 0;
 // }
 
-/*
-    LINK: https://www.codechef.com/problems/ROSEPL
-*/
+// /*
+//     LINK: https://www.codechef.com/problems/ROSEPL
+// */
