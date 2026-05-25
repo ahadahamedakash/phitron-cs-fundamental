@@ -20,11 +20,26 @@ int main()
 
     while (t--)
     {
+        ll n;
+        cin >> n;
+        vector<ll> v(n);
+        for (ll &i : v)
+            cin >> i;
+
+        ll oddCnt = 0;
+        for (int i = 0; i < n; ++i)
+            if (v[i] % 2 == 1)
+                oddCnt++;
+
+        if (oddCnt % 2 == 1)
+            no;
+        else
+            yes;
     }
 
     return 0;
 }
 
 /*
-    LINK: https://codeforces.com/problemset/problem/1665/B
+    LINK: https://codeforces.com/problemset/problem/1857/A
 */
