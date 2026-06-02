@@ -20,25 +20,12 @@ int main()
 
     while (t--)
     {
-        int n;
-        cin >> n;
-        vector<int> a(n), b(n);
+        ll b, c;
+        cin >> b >> c;
 
-        int mnLoss = INT_MAX, total = 0;
-        for (int i = 0; i < n; ++i)
-        {
-            cin >> a[i];
-            total += a[i];
-        }
+        ll gc = __gcd(b, c);
 
-        for (int i = 0; i < n; ++i)
-        {
-            cin >> b[i];
-
-            mnLoss = min(mnLoss, a[i] - b[i]);
-        }
-
-        cout << total - mnLoss << nl;
+        cout << (c / gc) << nl;
     }
 
     return 0;

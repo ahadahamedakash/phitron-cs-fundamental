@@ -22,24 +22,32 @@ int main()
     {
         int n;
         cin >> n;
-        vector<int> a(n), b(n);
 
-        int mnLoss = INT_MAX, total = 0;
-        for (int i = 0; i < n; ++i)
+        vector<int> v(n);
+        for (int &i : v)
+            cin >> i;
+
+        int fx = v[0];
+        bool isPossible = true;
+
+        for (int i = 1; i < n; ++i)
         {
-            cin >> a[i];
-            total += a[i];
+            if (abs(fx) != abs(v[i]))
+            {
+                isPossible = false;
+                break;
+            }
         }
 
-        for (int i = 0; i < n; ++i)
-        {
-            cin >> b[i];
-
-            mnLoss = min(mnLoss, a[i] - b[i]);
-        }
-
-        cout << total - mnLoss << nl;
+        if (isPossible)
+            yes;
+        else
+            no;
     }
 
     return 0;
 }
+
+/*
+    LINK: https://www.codechef.com/problems/PSAS?tab=statement
+*/
