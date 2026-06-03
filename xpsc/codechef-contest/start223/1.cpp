@@ -14,13 +14,10 @@ int main()
 {
     fastIO();
 
-    int n, x, y;
-    cin >> n >> x >> y;
+    int x;
+    cin >> x;
 
-    if (n >= 2 * x && n >= 2 * y)
-        yes;
-    else
-        no;
+    cout << (x >= 200 ? x - 50 : x) << nl;
 
     return 0;
 }

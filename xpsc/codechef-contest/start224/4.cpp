@@ -14,13 +14,22 @@ int main()
 {
     fastIO();
 
-    int n, x, y;
-    cin >> n >> x >> y;
+    int t;
+    t = 1;
+    cin >> t;
 
-    if (n >= 2 * x && n >= 2 * y)
-        yes;
-    else
-        no;
+    while (t--)
+    {
+        ll b, g, x, y, n;
+        cin >> b >> g >> x >> y >> n;
+
+        ll z = (b + g + n - 1) / n;
+
+        if (z <= b / x && z <= g / y)
+            cout << z << nl;
+        else
+            cout << -1 << nl;
+    }
 
     return 0;
 }
