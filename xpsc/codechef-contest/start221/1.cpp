@@ -14,5 +14,13 @@ int main()
 {
     fastIO();
 
+    int x, y;
+    cin >> x >> y;
+
+    if (x >= y)
+        yes;
+    else
+        no;
+
     return 0;
 }
