@@ -57,3 +57,7 @@ int main()
 
     return 0;
 }
+
+/*
+    LINK: https://codeforces.com/problemset/problem/1991/B
+*/
