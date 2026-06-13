@@ -1,7 +1,3 @@
-Small
-Large
-Equal
-Large
-Small
-Large
-Equal
+25 25
+5 7
+23 37
