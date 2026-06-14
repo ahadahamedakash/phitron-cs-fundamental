@@ -16,10 +16,33 @@ int main()
 
     int n, d;
     cin >> n >> d;
-    vector<pair<int, int>> v(n);
+    vector<ll> cnt(1e6 + 5, 0);
 
     for (int i = 0; i < n; ++i)
-        cin >> v[i].first >> v[i].second;
+    {
+        int s, t;
+        cin >> s >> t;
 
-        return 0;
+        if (s <= t - d)
+        {
+            cnt[s]++;
+            cnt[t - d + 1]--;
+        }
+    }
+
+    ll ans = 0, curr = 0;
+
+    for (int i = 0; i < 1e6; ++i)
+    {
+        curr += cnt[i];
+        ans += curr * (curr - 1) / 2;
+    }
+
+    cout << ans << nl;
+
+    return 0;
 }
+
+/*
+    LINK: https://atcoder.jp/contests/abc462/tasks/abc462_d
+*/
