@@ -29,14 +29,16 @@ int main()
         for (ll &i : steps)
             cin >> i;
 
-        sort(all(steps));
-
-        ll sum = 0;
-        vector<ll> prefSum;
-        for (ll val : steps)
+        vector<ll> prefSum(n), mx(n);
+        for (int i = 0; i < n; ++i)
         {
-            sum += val;
-            prefSum.push_back(sum);
+            prefSum[i] = steps[i];
+            if (i)
+                prefSum[i] += prefSum[i - 1];
+
+            mx[i] = steps[i];
+            if (i)
+                mx[i] = max(mx[i], mx[i - 1]);
         }
 
         vector<ll> qu(q);
@@ -45,7 +47,7 @@ int main()
 
         for (ll val : qu)
         {
-            ll idx = upper_bound(steps.begin(), steps.end(), val) - steps.begin();
+            ll idx = upper_bound(mx.begin(), mx.end(), val) - mx.begin();
 
             if (idx == 0)
                 cout << 0 << spc;
