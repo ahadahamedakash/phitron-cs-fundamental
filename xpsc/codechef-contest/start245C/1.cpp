@@ -1,8 +1,8 @@
 #include <bits/stdc++.h>
 #define nl '\n'
 #define spc ' '
-#define llmx LLONG_MAX
-#define llmn LLONG_MIN
+#define imx INT_MAX
+#define imn INT_MIN
 #define ld long double
 #define ll long long int
 #define no cout << "NO\n"
@@ -22,24 +22,15 @@ int main()
 
     while (tc--)
     {
-        int n;
-        cin >> n;
-        vector<ll> v(n);
-        for (ll &i : v)
-            cin >> i;
+        int x, y;
+        cin >> x >> y;
 
-        ll mnVal = llmx;
-        for (int i = 0; i < n - 1; ++i)
-        {
-            mnVal = min(mnVal, max(v[i], v[i + 1]));
-        }
+        int ans = 0;
+        for (int i = x; i > y; i--)
+            ans += (i + 9) / 10;
 
-        cout << mnVal - 1 << nl;
+        cout << ans << nl;
     }
 
     return 0;
 }
-
-/*
-    LINK: https://codeforces.com/problemset/problem/1979/A
-*/
