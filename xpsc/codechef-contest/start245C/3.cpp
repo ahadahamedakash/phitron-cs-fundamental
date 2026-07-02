@@ -26,12 +26,17 @@
 //         cin >> n, x;
 
 //         string a(n, '0'), b(n, '0'), c(n, '0');
-//         for (int i = 0; i < min(n, x); ++i)
+
+//         for (int i = 0; i < min(n, x); i++)
 //             a[i] = '1';
 
-//         int y = max(0, x - n);
-//         for (int i = n - y; i < n; ++i)
+//         int y = min(n, max(0, x - n));
+//         for (int i = n - y; i < n; i++)
 //             b[i] = '1';
+
+//         int z = max(0, x - 2 * n);
+//         for (int i = n - z; i < n; i++)
+//             c[i] = '1';
 
 //         cout << a << b << c << nl;
 //     }
