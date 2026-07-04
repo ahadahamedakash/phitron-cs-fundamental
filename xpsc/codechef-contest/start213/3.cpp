@@ -26,15 +26,27 @@ int main()
 
     while (tc--)
     {
-        ll n, m, i, j;
-        cin >> n >> m >> i >> j;
+        int n;
+        cin >> n;
+        vector<int> v(n);
+        for (int &i : v)
+            cin >> i;
+        int c1, c2, c3;
+        c1 = c2 = c3 = 0;
 
-        cout << 1 << spc << 1 << spc << n << spc << m << nl;
+        for (int val : v)
+        {
+            if (val == 1)
+                c1++;
+            else if (val == 2)
+                c2++;
+            else
+                c3++;
+        }
+
+        int ans = max(0, c2 - 1) + min(c1, c3);
+        cout << ans << nl;
     }
 
     return 0;
 }
-
-/*
-    LINK: https://codeforces.com/problemset/problem/1537/B
-*/

@@ -1,0 +1,56 @@
+#include <bits/stdc++.h>
+#define nl '\n'
+#define spc ' '
+#define imx INT_MAX
+#define imn INT_MIN
+#define llmx LLONG_MAX
+#define llmn LLONG_MIN
+#define ld long double
+#define ll long long int
+#define no cout << "No\n"
+#define yes cout << "Yes\n"
+#define sqr(x) ((x) * (x))
+#define sz(x) ((int)(x).size())
+#define all(x) x.begin(), x.end()
+#define rall(x) x.rbegin(), x.rend()
+#define fastIO() ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0)
+
+using namespace std;
+
+int main()
+{
+    fastIO();
+
+    int tc;
+    cin >> tc;
+
+    while (tc--)
+    {
+        int n;
+        ll x;
+        cin >> n >> x;
+        vector<ll> v(n);
+        for (ll &i : v)
+            cin >> i;
+
+        int less, equal, greater;
+        less = greater = equal = 0;
+
+        for (ll val : v)
+        {
+            if (val < x)
+                less++;
+            else if (val > x)
+                greater++;
+            else
+                equal++;
+        }
+
+        if (equal > 0 || less == 0 || greater == 0)
+            yes;
+        else
+            no;
+    }
+
+    return 0;
+}
