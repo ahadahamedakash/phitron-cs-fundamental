@@ -21,33 +21,37 @@ int main()
 {
     fastIO();
 
-    int n, q, tc = 0;
+    int tc;
+    cin >> tc;
 
-    while (cin >> n >> q)
+    while (tc--)
     {
-        if (n == 0 && q == 0)
-            break;
+        int n;
+        cin >> n;
 
-        vector<int> v(n);
-        for (int &i : v)
-            cin >> i;
+        string s;
+        cin >> s;
 
-        sort(all(v));
+        int i, ans;
+        i = ans = 0;
 
-        cout << "CASE# " << ++tc << ':' << nl;
-
-        while (q--)
+        while (i < n)
         {
-            int x;
-            cin >> x;
-
-            auto it = lower_bound(v.begin(), v.end(), x);
-
-            if (it != v.end() && *it == x)
-                cout << x << " found at " << (it - v.begin() + 1) << nl;
+            if (i <= n - 5 && s.substr(i, 5) == "mapie")
+            {
+                ans++;
+                i += 5;
+            }
+            else if (i <= n - 3 && (s.substr(i, 3) == "map" || s.substr(i, 3) == "pie"))
+            {
+                ans++;
+                i += 3;
+            }
             else
-                cout << x << " not found" << nl;
+                i++;
         }
+
+        cout << ans << nl;
     }
 
     return 0;
