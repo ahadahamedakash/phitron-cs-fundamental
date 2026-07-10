@@ -21,38 +21,37 @@ int main()
 {
     fastIO();
 
-    int n, k;
-    cin >> n >> k;
+    ll n, d;
+    cin >> n >> d;
 
     vector<ll> v(n);
     for (ll &i : v)
         cin >> i;
 
-    map<ll, int> mp;
-    ll l, distinct, ans;
-    l = distinct = ans = 0;
+    sort(all(v));
 
-    for (int r = 0; r < n; ++r)
+    ll lt = -1, rt = n - 1;
+    ll teamSize = 1, teams = 0;
+    while (lt < rt)
     {
-        if (mp[v[r]] == 0)
-            distinct++;
-
-        mp[v[r]]++;
-
-        while (distinct > k)
+        if ((v[rt] * teamSize) <= d && lt < rt)
         {
-            mp[v[l]]--;
-
-            if (mp[v[l]] == 0)
-                distinct--;
-
-            l++;
+            lt++;
+            teamSize++;
         }
-
-        ans += r - l + 1;
+        else
+        {
+            teams++;
+            rt--;
+            teamSize = 1;
+        }
     }
 
-    cout << ans << nl;
+    cout << teams << nl;
 
     return 0;
 }
+
+/*
+    https://codeforces.com/problemset/problem/1725/B
+*/
