@@ -7,8 +7,8 @@
 #define llmn LLONG_MIN
 #define ld long double
 #define ll long long int
-#define pass cout << "Pass\n"
-#define fail cout << "Fail\n"
+#define no cout << "NO\n"
+#define yes cout << "YES\n"
 #define sqr(x) ((x) * (x))
 #define sz(x) ((int)(x).size())
 #define all(x) x.begin(), x.end()
@@ -17,34 +17,26 @@
 
 using namespace std;
 
+const int maxN = 1e6 + 9;
+vector<int> divisors(maxN);
+
 int main()
 {
     fastIO();
+
+    for (int i = 1; i < maxN; ++i)
+        for (int j = i; j < maxN; j += i)
+            divisors[j]++;
 
     int tc;
     cin >> tc;
 
     while (tc--)
     {
-        int sixtyUp, thirtyUp;
-        sixtyUp = thirtyUp = 0;
+        int n;
+        cin >> n;
 
-        for (int i = 0; i < 5; ++i)
-        {
-            int x;
-            cin >> x;
-
-            if (x >= 60)
-                sixtyUp++;
-
-            if (x >= 30)
-                thirtyUp++;
-        }
-
-        if (sixtyUp >= 2 && thirtyUp >= 4)
-            pass;
-        else
-            fail;
+        cout << divisors[n] << nl;
     }
 
     return 0;
