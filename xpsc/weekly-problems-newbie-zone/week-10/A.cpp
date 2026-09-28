@@ -50,6 +50,30 @@ void printv(const vector<T> &v)
     cout << nl;
 }
 
+const int p = 137, MOD = 1e9 + 7;
+const int N = 1e5 + 9;
+
+int pw[N];
+
+void prec()
+{
+    pw[0] = 1;
+    for (int i = 1; i < N; ++i)
+        pw[i] = 1LL * pw[i - 1] * p % MOD;
+}
+
+int getHash(string s)
+{
+    int hash = 0;
+    for (int i = 0; i < sz(s); ++i)
+    {
+        hash += 1LL * s[i] * pw[i] % MOD;
+        hash %= MOD;
+    }
+
+    return hash;
+}
+
 void smash()
 {
 
@@ -65,6 +89,7 @@ void smash()
 int main()
 {
     fastIO();
+    prec();
 
     int tc;
     cin >> tc;
