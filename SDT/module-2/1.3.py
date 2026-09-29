@@ -1,3 +1,4 @@
+# scope
 balance = 5000
 
 
