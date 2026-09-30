@@ -1,9 +1,9 @@
 import pyautogui
-import time
+from time import sleep
 
 n = int(input("Enter a number: "))
 
-time.sleep(2)
+sleep(2)
 
 for i in range(1, n + 1):
     pyautogui.write("#" * i)
