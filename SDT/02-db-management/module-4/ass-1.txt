@@ -1,0 +1,69 @@
+--- 01 & 02
+
+CREATE TABLE Student (
+    id INT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    age INT CHECK (age >= 0)
+);
+
+CREATE TABLE Library (
+    id INT PRIMARY KEY,
+    student_id INT NOT NULL,
+    book_name VARCHAR(150) NOT NULL,
+    issued_at DATE,
+    returned_at DATE,
+
+    FOREIGN KEY (student_id)
+        REFERENCES Student(id)
+);
+
+CREATE TABLE Fees (
+    id INT PRIMARY KEY,
+    student_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
+    payment_at DATE,
+    status VARCHAR(20) DEFAULT 'Pending',
+
+    FOREIGN KEY (student_id)
+        REFERENCES Student(id)
+);
+
+--- 03
+Difference between data and information are given below:
+Data:
+    1. Data is unprocessed
+    2. It may not have clear meaning by itself
+    3. Data is insufficient for making decisions by itself
+    4. it is usually used as input for processing
+    5. As example a data can be some numbers like 10, 20, 30 etc.
+
+Information:
+    1. Information are processed and organized data.
+    2. it provides a meaningful understanding.
+    3. Information helps to take decisions.
+    4. it is usually the output of processing data
+    5. Example of information can be, user_name = ahad.
+
+--- 04
+SET SQL_SAFE_UPDATES = 0;
+
+
+--- 05
+SELECT DISTINCT Department FROM Employee;
+
+--- 06
+SELECT LastName FROM Employee ORDER BY Age DESC;
+
+--- 07
+SELECT LastName FROM Employee WHERE Age > 30 AND Department = 'Marketing';
+
+--- 08
+SELECT * FROM Employee;
+
+--- 09
+SELECT * FROM Employee WHERE FirstName LIKE '%son%' OR LastName LIKE '%son%';
+
+--- 10
+SELECT * FROM Employee WHERE Department = 'Engineering';
