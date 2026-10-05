@@ -1,0 +1,1161 @@
+SQL FOR SOFTWARE ENGINEERS — POSTGRESQL QUICK REFERENCE
+
+Note: Examples use PostgreSQL syntax. Replace table/column names with your own schema where needed.
+
+
+-- 1. DATABASE & SCHEMA BASICS
+
+CREATE DATABASE myapp;
+Creates a new database named myapp.
+
+DROP DATABASE myapp;
+Permanently deletes the database named myapp.
+
+CREATE SCHEMA app;
+Creates a namespace/schema named app inside the current database.
+
+DROP SCHEMA app;
+Deletes the app schema and its objects if they are empty.
+
+DROP SCHEMA app CASCADE;
+Deletes the app schema and all objects depending on it.
+
+SET search_path TO app, public;
+Makes PostgreSQL search the app schema before public when resolving object names.
+
+SELECT current_database();
+Returns the name of the database currently being used.
+
+SELECT current_schema();
+Returns the current PostgreSQL schema.
+
+
+-- 2. CREATE TABLE / DDL
+
+CREATE TABLE users (id BIGSERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL, age INT, created_at TIMESTAMPTZ DEFAULT NOW());
+Creates a users table with an auto-incrementing primary key, required fields, a unique email, and a creation timestamp.
+
+CREATE TABLE departments (id BIGSERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE);
+Creates a departments table with a unique department name.
+
+CREATE TABLE employees (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, salary NUMERIC(12,2), department_id BIGINT REFERENCES departments(id));
+Creates an employees table and links department_id to departments using a foreign key.
+
+CREATE TABLE products (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, price NUMERIC(12,2) CHECK (price >= 0), stock INT DEFAULT 0 CHECK (stock >= 0));
+Creates a products table with validation rules preventing negative prices and stock.
+
+CREATE TABLE orders (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id), status VARCHAR(30) DEFAULT 'pending', total NUMERIC(12,2) NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+Creates an orders table connected to users with a default pending status.
+
+CREATE TABLE order_items (order_id BIGINT REFERENCES orders(id) ON DELETE CASCADE, product_id BIGINT REFERENCES products(id), quantity INT NOT NULL CHECK (quantity > 0), price NUMERIC(12,2) NOT NULL, PRIMARY KEY (order_id, product_id));
+Creates a junction table for order products with a composite primary key.
+
+CREATE TABLE IF NOT EXISTS logs (id BIGSERIAL PRIMARY KEY, message TEXT);
+Creates the logs table only if it does not already exist.
+
+DROP TABLE logs;
+Permanently deletes the logs table and its data.
+
+DROP TABLE IF EXISTS logs;
+Deletes the logs table if it exists without raising an error when it does not.
+
+TRUNCATE TABLE logs;
+Removes all rows from logs quickly while keeping the table structure.
+
+TRUNCATE TABLE logs RESTART IDENTITY;
+Removes all rows and resets identity/serial sequences.
+
+TRUNCATE TABLE logs CASCADE;
+Truncates logs and dependent tables affected by foreign-key relationships.
+
+ALTER TABLE users ADD COLUMN phone VARCHAR(30);
+Adds a phone column to the users table.
+
+ALTER TABLE users DROP COLUMN phone;
+Removes the phone column from users.
+
+ALTER TABLE users RENAME COLUMN name TO full_name;
+Renames the name column to full_name.
+
+ALTER TABLE users RENAME TO customers;
+Renames the users table to customers.
+
+ALTER TABLE users ALTER COLUMN age SET NOT NULL;
+Makes the age column required.
+
+ALTER TABLE users ALTER COLUMN age DROP NOT NULL;
+Allows age to contain NULL values.
+
+ALTER TABLE users ALTER COLUMN age SET DEFAULT 18;
+Sets 18 as the default value for future age inserts.
+
+ALTER TABLE users ALTER COLUMN age DROP DEFAULT;
+Removes the default value from age.
+
+ALTER TABLE users ALTER COLUMN name TYPE VARCHAR(200);
+Changes the data type of the name column.
+
+ALTER TABLE users ADD CONSTRAINT users_age_check CHECK (age >= 0);
+Adds a constraint preventing negative ages.
+
+ALTER TABLE users DROP CONSTRAINT users_age_check;
+Removes the named age validation constraint.
+
+ALTER TABLE employees ADD CONSTRAINT employees_department_fk FOREIGN KEY (department_id) REFERENCES departments(id);
+Adds a foreign-key relationship between employees and departments.
+
+
+-- 3. INSERT
+
+INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 25);
+Inserts one user row into users.
+
+INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 25), ('Bob', 'bob@example.com', 30);
+Inserts multiple user rows in one statement.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') RETURNING *;
+Inserts a user and immediately returns the inserted row.
+
+INSERT INTO users (name, email) SELECT name, email FROM customers;
+Inserts rows into users using the result of another query.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO NOTHING;
+Inserts the user but ignores the operation if the email already exists.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name;
+Inserts a user or updates the existing row when the email conflicts.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING *;
+Performs an upsert and returns the affected row.
+
+
+-- 4. SELECT BASICS
+
+SELECT * FROM users;
+Returns every column and row from users.
+
+SELECT id, name, email FROM users;
+Returns only the selected columns from users.
+
+SELECT DISTINCT age FROM users;
+Returns each different age only once.
+
+SELECT DISTINCT ON (email) * FROM users ORDER BY email, created_at DESC;
+Returns the latest row for each email according to the ordering.
+
+SELECT name AS user_name FROM users;
+Returns the name column using the alias user_name.
+
+SELECT 10 + 20 AS result;
+Returns the calculated value 30 with the column name result.
+
+SELECT NOW();
+Returns the current date and time from the database server.
+
+SELECT CURRENT_DATE;
+Returns the current database date.
+
+SELECT * FROM users WHERE age >= 18;
+Returns users whose age is at least 18.
+
+SELECT * FROM users WHERE age BETWEEN 18 AND 30;
+Returns users whose age is between 18 and 30 inclusive.
+
+SELECT * FROM users WHERE age IN (18, 21, 25);
+Returns users whose age matches one of the listed values.
+
+SELECT * FROM users WHERE email IS NULL;
+Returns users whose email value is NULL.
+
+SELECT * FROM users WHERE email IS NOT NULL;
+Returns users whose email value is not NULL.
+
+SELECT * FROM users WHERE name LIKE 'A%';
+Returns users whose names start with A.
+
+SELECT * FROM users WHERE name ILIKE '%ahad%';
+Returns users whose names contain ahad without case sensitivity.
+
+SELECT * FROM users WHERE name NOT LIKE 'A%';
+Returns users whose names do not start with A.
+
+SELECT * FROM users WHERE age >= 18 AND age <= 60;
+Returns users satisfying both age conditions.
+
+SELECT * FROM users WHERE age < 18 OR age > 60;
+Returns users satisfying at least one of the age conditions.
+
+SELECT * FROM users WHERE NOT (age >= 18);
+Returns users who do not satisfy the age-at-least-18 condition.
+
+SELECT * FROM users ORDER BY created_at DESC;
+Returns users sorted from newest to oldest.
+
+SELECT * FROM users ORDER BY name ASC, created_at DESC;
+Sorts users by name ascending and then creation time descending.
+
+SELECT * FROM users LIMIT 20;
+Returns at most 20 rows.
+
+SELECT * FROM users OFFSET 20 LIMIT 20;
+Skips the first 20 rows and returns the next 20 rows.
+
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;
+Returns page 3 when using simple offset pagination with 20 rows per page.
+
+SELECT * FROM users WHERE id > 100 ORDER BY id LIMIT 20;
+Returns the next 20 users after id 100 using keyset pagination.
+
+SELECT COALESCE(phone, 'N/A') FROM users;
+Returns the phone value or N/A when phone is NULL.
+
+SELECT NULLIF(age, 0) FROM users;
+Returns NULL when age is zero and otherwise returns age.
+
+
+-- 5. UPDATE
+
+UPDATE users SET age = 26 WHERE id = 1;
+Changes the age of user 1 to 26.
+
+UPDATE users SET age = age + 1 WHERE age >= 18;
+Increases the age of all adult users by one.
+
+UPDATE users SET name = 'Updated Name', age = 30 WHERE id = 1;
+Updates multiple columns of one user.
+
+UPDATE users SET age = age + 1 RETURNING *;
+Updates all users and returns every changed row.
+
+UPDATE users SET name = INITCAP(name);
+Converts names to title case.
+
+UPDATE users SET email = LOWER(email);
+Converts all email addresses to lowercase.
+
+
+-- 6. DELETE
+
+DELETE FROM users WHERE id = 1;
+Deletes the user with id 1.
+
+DELETE FROM users WHERE age < 18;
+Deletes all users younger than 18.
+
+DELETE FROM users WHERE id = 1 RETURNING *;
+Deletes a user and returns the deleted row.
+
+DELETE FROM users;
+Deletes every row from users while keeping the table.
+
+DELETE FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Deletes users who have never placed an order.
+
+
+-- 7. AGGREGATE FUNCTIONS
+
+SELECT COUNT(*) FROM users;
+Returns the total number of rows in users.
+
+SELECT COUNT(email) FROM users;
+Returns the number of users whose email is not NULL.
+
+SELECT COUNT(DISTINCT email) FROM users;
+Returns the number of distinct non-NULL email addresses.
+
+SELECT SUM(total) FROM orders;
+Returns the sum of all order totals.
+
+SELECT AVG(total) FROM orders;
+Returns the average order total.
+
+SELECT MIN(total), MAX(total) FROM orders;
+Returns the smallest and largest order totals.
+
+SELECT ROUND(AVG(total), 2) FROM orders;
+Returns the average order total rounded to two decimal places.
+
+SELECT STRING_AGG(name, ', ') FROM users;
+Combines user names into one comma-separated string.
+
+SELECT ARRAY_AGG(id) FROM users;
+Collects user IDs into a PostgreSQL array.
+
+
+-- 8. GROUP BY
+
+SELECT status, COUNT(*) FROM orders GROUP BY status;
+Returns the number of orders for each status.
+
+SELECT user_id, COUNT(*) AS order_count FROM orders GROUP BY user_id;
+Returns how many orders each user has.
+
+SELECT user_id, SUM(total) AS total_spent FROM orders GROUP BY user_id;
+Returns total spending for each user.
+
+SELECT department_id, AVG(salary) AS avg_salary FROM employees GROUP BY department_id;
+Returns the average salary for each department.
+
+SELECT DATE(created_at), COUNT(*) FROM orders GROUP BY DATE(created_at);
+Returns the number of orders created on each calendar date.
+
+SELECT department_id, COUNT(*) FROM employees WHERE salary > 50000 GROUP BY department_id;
+Counts employees earning over 50000 in each department.
+
+SELECT department_id, COUNT(*) FROM employees GROUP BY department_id HAVING COUNT(*) >= 5;
+Returns departments containing at least five employees.
+
+SELECT user_id, SUM(total) FROM orders GROUP BY user_id HAVING SUM(total) > 1000;
+Returns users whose total order spending exceeds 1000.
+
+
+-- 9. CASE / CONDITIONAL LOGIC
+
+SELECT name, CASE WHEN age >= 18 THEN 'adult' ELSE 'minor' END AS category FROM users;
+Returns each user with an adult/minor category.
+
+SELECT name, CASE WHEN age >= 60 THEN 'senior' WHEN age >= 18 THEN 'adult' ELSE 'minor' END AS category FROM users;
+Classifies users into senior, adult, or minor groups.
+
+SELECT status, COUNT(*) FILTER (WHERE total >= 1000) AS large_orders FROM orders GROUP BY status;
+Counts orders worth at least 1000 separately for each status.
+
+SELECT COUNT(*) FILTER (WHERE age >= 18) AS adults, COUNT(*) FILTER (WHERE age < 18) AS minors FROM users;
+Returns adult and minor counts in a single row.
+
+
+-- 10. STRING FUNCTIONS
+
+SELECT LOWER(name) FROM users;
+Converts names to lowercase.
+
+SELECT UPPER(name) FROM users;
+Converts names to uppercase.
+
+SELECT LENGTH(name) FROM users;
+Returns the number of characters in each name.
+
+SELECT TRIM(name) FROM users;
+Removes leading and trailing whitespace from names.
+
+SELECT REPLACE(name, 'old', 'new') FROM users;
+Replaces occurrences of old text with new text.
+
+SELECT SUBSTRING(name FROM 1 FOR 3) FROM users;
+Returns the first three characters of each name.
+
+SELECT CONCAT(name, ' <', email, '>') FROM users;
+Combines name and email into one string.
+
+SELECT CONCAT_WS(' - ', name, email) FROM users;
+Combines values using ' - ' as the separator.
+
+SELECT SPLIT_PART(email, '@', 2) FROM users;
+Returns the domain part of each email address.
+
+
+-- 11. DATE / TIME FUNCTIONS
+
+SELECT NOW();
+Returns the current timestamp with time zone.
+
+SELECT CURRENT_DATE;
+Returns the current date.
+
+SELECT AGE(NOW(), created_at) FROM users;
+Returns the elapsed age/duration between creation time and now.
+
+SELECT EXTRACT(YEAR FROM created_at) FROM users;
+Extracts the year from each timestamp.
+
+SELECT DATE_TRUNC('month', created_at) FROM orders;
+Truncates each timestamp to the beginning of its month.
+
+SELECT created_at + INTERVAL '7 days' FROM users;
+Returns each creation timestamp plus seven days.
+
+SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL '30 days';
+Returns orders created during the last 30 days.
+
+SELECT * FROM orders WHERE created_at >= CURRENT_DATE AND created_at < CURRENT_DATE + INTERVAL '1 day';
+Returns orders created today using a half-open time range.
+
+
+-- 12. JOINS
+
+SELECT u.name, o.id FROM users u INNER JOIN orders o ON o.user_id = u.id;
+Returns users who have matching orders.
+
+SELECT u.name, o.id FROM users u LEFT JOIN orders o ON o.user_id = u.id;
+Returns every user and matching orders, including users with no orders.
+
+SELECT u.name, o.id FROM users u RIGHT JOIN orders o ON o.user_id = u.id;
+Returns every order and matching users, including orders without a matching user.
+
+SELECT u.name, o.id FROM users u FULL OUTER JOIN orders o ON o.user_id = u.id;
+Returns all users and all orders while matching related rows where possible.
+
+SELECT u.name, d.name FROM employees e JOIN users u ON u.id = e.id JOIN departments d ON d.id = e.department_id;
+Joins three tables to retrieve employee, user, and department information.
+
+SELECT p.name, oi.quantity FROM products p CROSS JOIN order_items oi;
+Returns every possible combination of a product and an order item.
+
+SELECT e.name, m.name AS manager FROM employees e JOIN employees m ON e.manager_id = m.id;
+Uses a self-join to match employees with their managers.
+
+SELECT u.name FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users for whom at least one order exists.
+
+SELECT u.name FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users who have no orders.
+
+
+-- 13. SUBQUERIES
+
+SELECT * FROM users WHERE age > (SELECT AVG(age) FROM users);
+Returns users older than the average user age.
+
+SELECT * FROM products WHERE price = (SELECT MAX(price) FROM products);
+Returns products whose price equals the maximum product price.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+Returns users whose IDs appear in the orders table.
+
+SELECT u.* FROM users u WHERE u.id IN (SELECT o.user_id FROM orders o WHERE o.total > 1000);
+Returns users who have at least one order above 1000.
+
+SELECT u.name, (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) AS order_count FROM users u;
+Returns each user together with a correlated count of their orders.
+
+
+-- 14. COMMON TABLE EXPRESSIONS (CTE)
+
+WITH active_users AS (SELECT * FROM users WHERE age >= 18) SELECT * FROM active_users;
+Creates a temporary named query result and selects from it.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM totals WHERE spent > 1000;
+Uses a CTE to calculate user spending and then filter it.
+
+WITH monthly_sales AS (SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS sales FROM orders GROUP BY 1) SELECT * FROM monthly_sales ORDER BY month;
+Creates a monthly sales summary and sorts it chronologically.
+
+WITH deleted AS (DELETE FROM users WHERE id = 1 RETURNING *) SELECT * FROM deleted;
+Uses a data-modifying CTE to delete a row and return the deleted data.
+
+WITH RECURSIVE numbers AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM numbers WHERE n < 10) SELECT * FROM numbers;
+Uses a recursive CTE to generate numbers from 1 through 10.
+
+
+-- 15. WINDOW FUNCTIONS
+
+SELECT name, salary, AVG(salary) OVER () AS company_avg FROM employees;
+Returns each employee's salary together with the overall average salary.
+
+SELECT name, salary, AVG(salary) OVER (PARTITION BY department_id) AS department_avg FROM employees;
+Returns each employee's salary and the average salary of their department.
+
+SELECT name, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Assigns a unique sequential number according to salary order.
+
+SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Ranks employees by salary while leaving gaps after ties.
+
+SELECT name, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Ranks employees by salary without gaps after ties.
+
+SELECT name, salary, LAG(salary) OVER (ORDER BY salary) AS previous_salary FROM employees;
+Returns each employee's salary together with the previous salary in sorted order.
+
+SELECT name, salary, LEAD(salary) OVER (ORDER BY salary) AS next_salary FROM employees;
+Returns each employee's salary together with the next salary in sorted order.
+
+SELECT name, salary, FIRST_VALUE(salary) OVER (ORDER BY salary DESC) AS highest_salary FROM employees;
+Returns each employee's salary alongside the highest salary.
+
+SELECT name, salary, SUM(salary) OVER (ORDER BY id) AS running_total FROM employees;
+Returns a cumulative salary total ordered by employee ID.
+
+SELECT department_id, name, salary, ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn FROM employees;
+Numbers employees separately within each department by descending salary.
+
+SELECT * FROM (SELECT e.*, ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) rn FROM employees e) x WHERE rn <= 3;
+Returns the top three highest-paid employees from every department.
+
+
+-- 16. SET OPERATIONS
+
+SELECT email FROM users UNION SELECT email FROM customers;
+Combines results and removes duplicate rows.
+
+SELECT email FROM users UNION ALL SELECT email FROM customers;
+Combines results while keeping duplicates.
+
+SELECT email FROM users INTERSECT SELECT email FROM customers;
+Returns values appearing in both query results.
+
+SELECT email FROM users EXCEPT SELECT email FROM customers;
+Returns values appearing in users but not customers.
+
+
+-- 17. UPSERT / CONFLICT HANDLING
+
+INSERT INTO products (name, price) VALUES ('Keyboard', 50) ON CONFLICT DO NOTHING;
+Inserts a product and ignores any conflict detected by a unique/exclusion constraint.
+
+INSERT INTO products (id, name, price) VALUES (1, 'Keyboard', 60) ON CONFLICT (id) DO UPDATE SET price = EXCLUDED.price;
+Updates the existing product price when the product ID already exists.
+
+INSERT INTO users (email, name) VALUES ('a@example.com', 'Alice') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW();
+Creates or updates a user using email as the conflict key.
+
+
+-- 18. CONSTRAINTS
+
+ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+Adds a uniqueness constraint so duplicate emails are rejected.
+
+ALTER TABLE users ADD CONSTRAINT users_age_check CHECK (age >= 0 AND age <= 150);
+Restricts age to the valid range from 0 to 150.
+
+ALTER TABLE orders ADD CONSTRAINT orders_total_check CHECK (total >= 0);
+Prevents negative order totals.
+
+ALTER TABLE orders ADD CONSTRAINT orders_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT;
+Prevents deletion of a user while dependent orders still exist.
+
+ALTER TABLE orders ADD CONSTRAINT orders_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+Automatically deletes a user's dependent orders when that user is deleted.
+
+ALTER TABLE order_items ADD CONSTRAINT order_product_unique UNIQUE (order_id, product_id);
+Prevents the same product from being inserted twice into one order.
+
+
+-- 19. INDEXES
+
+CREATE INDEX idx_users_email ON users(email);
+Creates an index that can speed up searches and joins using email.
+
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+Creates a unique index preventing duplicate email values and accelerating email lookups.
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+Creates an index to speed up queries filtering or joining orders by user_id.
+
+CREATE INDEX idx_orders_created_at ON orders(created_at);
+Creates an index useful for time-based order filtering and sorting.
+
+CREATE INDEX idx_orders_user_created ON orders(user_id, created_at DESC);
+Creates a composite index useful for queries filtering by user and ordering by creation time.
+
+CREATE INDEX idx_users_lower_email ON users(LOWER(email));
+Creates a functional index that speeds up case-insensitive email lookups.
+
+CREATE INDEX idx_orders_pending ON orders(created_at) WHERE status = 'pending';
+Creates a partial index containing only pending orders.
+
+DROP INDEX idx_users_email;
+Removes the specified index.
+
+REINDEX INDEX idx_users_email_unique;
+Rebuilds the specified PostgreSQL index.
+
+ANALYZE users;
+Updates table statistics used by the PostgreSQL query planner.
+
+
+-- 20. EXPLAIN / QUERY PERFORMANCE
+
+EXPLAIN SELECT * FROM users WHERE email = 'a@example.com';
+Shows the query execution plan PostgreSQL expects to use.
+
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'a@example.com';
+Executes the query and shows the actual execution plan and timing.
+
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM orders WHERE user_id = 10;
+Shows actual execution details plus buffer/cache usage for performance investigation.
+
+VACUUM users;
+Reclaims storage from dead tuples and maintains table health without requiring an exclusive table lock.
+
+VACUUM ANALYZE users;
+Vacuums the table and refreshes planner statistics.
+
+VACUUM FULL users;
+Rewrites the table to reclaim more disk space but requires a stronger lock and can be disruptive.
+
+
+-- 21. TRANSACTIONS
+
+BEGIN;
+Starts a database transaction.
+
+COMMIT;
+Permanently saves all changes made in the current transaction.
+
+ROLLBACK;
+Cancels all changes made in the current transaction.
+
+SAVEPOINT before_payment;
+Creates a savepoint that can be used to partially roll back the transaction.
+
+ROLLBACK TO SAVEPOINT before_payment;
+Rolls the transaction back to the specified savepoint.
+
+RELEASE SAVEPOINT before_payment;
+Removes the specified savepoint while keeping the transaction active.
+
+BEGIN; UPDATE products SET stock = stock - 1 WHERE id = 10 AND stock > 0; COMMIT;
+Atomically decreases stock only when stock is available and commits the change.
+
+BEGIN; UPDATE accounts SET balance = balance - 100 WHERE id = 1; UPDATE accounts SET balance = balance + 100 WHERE id = 2; COMMIT;
+Transfers money between two accounts atomically when both updates succeed.
+
+
+-- 22. LOCKING / CONCURRENCY
+
+SELECT * FROM products WHERE id = 10 FOR UPDATE;
+Locks the selected product rows so other transactions cannot update them until the transaction ends.
+
+SELECT * FROM products WHERE id = 10 FOR NO KEY UPDATE;
+Takes a row lock that prevents concurrent updates that could conflict with the row's key.
+
+SELECT * FROM products WHERE id = 10 FOR SHARE;
+Takes a shared row lock allowing other compatible readers while preventing conflicting changes.
+
+SELECT * FROM jobs WHERE status = 'pending' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 10;
+Selects available jobs while skipping rows already locked by another worker.
+
+LOCK TABLE users IN SHARE MODE;
+Acquires a table-level shared lock on users.
+
+
+-- 23. VIEWS
+
+CREATE VIEW active_users AS SELECT id, name, email FROM users WHERE age >= 18;
+Creates a reusable virtual table containing adult users.
+
+SELECT * FROM active_users;
+Reads data from the active_users view.
+
+CREATE OR REPLACE VIEW active_users AS SELECT id, name, email, age FROM users WHERE age >= 18;
+Replaces an existing view definition.
+
+DROP VIEW active_users;
+Deletes the view.
+
+CREATE MATERIALIZED VIEW monthly_sales AS SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS sales FROM orders GROUP BY 1;
+Creates a physically stored query result that can make repeated analytical queries faster.
+
+REFRESH MATERIALIZED VIEW monthly_sales;
+Rebuilds the materialized view using current underlying data.
+
+DROP MATERIALIZED VIEW monthly_sales;
+Deletes the materialized view.
+
+
+-- 24. FUNCTIONS
+
+CREATE OR REPLACE FUNCTION add_numbers(a INT, b INT) RETURNS INT LANGUAGE SQL AS $$ SELECT a + b; $$;
+Creates a SQL function that returns the sum of two integers.
+
+SELECT add_numbers(10, 20);
+Calls the custom add_numbers function and returns 30.
+
+CREATE OR REPLACE FUNCTION get_user_count() RETURNS BIGINT LANGUAGE SQL AS $$ SELECT COUNT(*) FROM users; $$;
+Creates a function that returns the current number of users.
+
+SELECT get_user_count();
+Calls the function and returns the user count.
+
+CREATE OR REPLACE FUNCTION user_age_category(user_age INT) RETURNS TEXT LANGUAGE SQL AS $$ SELECT CASE WHEN user_age >= 18 THEN 'adult' ELSE 'minor' END; $$;
+Creates a function that converts an age into an adult/minor category.
+
+SELECT user_age_category(age) FROM users;
+Calls the custom age-category function for every user.
+
+
+-- 25. STORED PROCEDURE
+
+CREATE OR REPLACE PROCEDURE increase_stock(product_id BIGINT, amount INT) LANGUAGE SQL AS $$ UPDATE products SET stock = stock + amount WHERE id = product_id; $$;
+Creates a stored procedure that increases a product's stock.
+
+CALL increase_stock(10, 5);
+Executes the stored procedure and adds five units to product 10.
+
+
+-- 26. TRIGGERS
+
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER LANGUAGE PLPGSQL AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$;
+Creates a trigger function that sets updated_at whenever a row changes.
+
+CREATE TRIGGER users_set_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+Automatically updates users.updated_at before every user update.
+
+DROP TRIGGER users_set_updated_at ON users;
+Removes the specified trigger from users.
+
+
+-- 27. JSON / JSONB
+
+SELECT '{"name":"Alice","age":25}'::jsonb;
+Converts a JSON string into PostgreSQL's JSONB data type.
+
+SELECT data->'profile' FROM accounts;
+Returns the profile JSON object from the data JSONB column.
+
+SELECT data->>'name' FROM accounts;
+Returns the name JSON value as text.
+
+SELECT data->'address'->>'city' FROM accounts;
+Extracts the city value from a nested JSONB object.
+
+SELECT * FROM accounts WHERE data @> '{"role":"admin"}';
+Returns rows whose JSONB data contains the specified JSON structure.
+
+UPDATE accounts SET data = jsonb_set(data, '{role}', '"admin"') WHERE id = 1;
+Updates the role field inside a JSONB document.
+
+SELECT jsonb_array_elements(data->'roles') FROM accounts;
+Expands a JSONB array into one row per array element.
+
+SELECT data ? 'phone' FROM accounts;
+Checks whether a JSONB object contains a top-level phone key.
+
+
+-- 28. ARRAYS
+
+SELECT ARRAY[1, 2, 3];
+Returns a PostgreSQL integer array.
+
+SELECT tags[1] FROM posts;
+Returns the first element of the tags array.
+
+SELECT * FROM posts WHERE 'sql' = ANY(tags);
+Returns posts whose tags array contains sql.
+
+UPDATE posts SET tags = array_append(tags, 'postgresql') WHERE id = 1;
+Appends postgresql to the tags array.
+
+SELECT unnest(tags) FROM posts;
+Expands array elements into separate result rows.
+
+
+-- 29. NULL HANDLING
+
+SELECT COALESCE(phone, 'Unknown') FROM users;
+Returns phone when present or Unknown when phone is NULL.
+
+SELECT NULLIF(status, 'unknown') FROM orders;
+Converts the status unknown into NULL.
+
+SELECT COUNT(*) FILTER (WHERE phone IS NULL) FROM users;
+Counts users whose phone number is missing.
+
+SELECT CASE WHEN phone IS NULL THEN 'missing' ELSE 'available' END FROM users;
+Labels each user according to whether a phone number exists.
+
+
+-- 30. CASTING / TYPES
+
+SELECT '123'::INT;
+Converts the string 123 into an integer.
+
+SELECT CAST('123' AS INT);
+Converts the string 123 into an integer using standard SQL CAST syntax.
+
+SELECT price::NUMERIC(12,2) FROM products;
+Converts price values to a numeric type with two decimal places.
+
+SELECT created_at::DATE FROM orders;
+Converts timestamps into dates.
+
+SELECT 10::TEXT;
+Converts the integer 10 into text.
+
+
+-- 31. ENUMS
+
+CREATE TYPE order_status AS ENUM ('pending', 'paid', 'cancelled', 'completed');
+Creates a PostgreSQL enum type for allowed order statuses.
+
+ALTER TYPE order_status ADD VALUE 'refunded';
+Adds a new value to the existing enum type.
+
+DROP TYPE order_status;
+Deletes the enum type when nothing depends on it.
+
+
+-- 32. TEMPORARY TABLES
+
+CREATE TEMP TABLE temp_users AS SELECT * FROM users WHERE age >= 18;
+Creates a temporary table containing adult users for the current session.
+
+CREATE TEMP TABLE temp_totals (user_id BIGINT, total NUMERIC);
+Creates an empty temporary table for session-specific calculations.
+
+DROP TABLE temp_users;
+Deletes the temporary table explicitly.
+
+
+-- 33. NULL-SAFE / DISTINCT COMPARISON
+
+SELECT * FROM users WHERE age IS DISTINCT FROM 18;
+Returns rows whose age differs from 18 while treating NULL as a comparable value.
+
+SELECT * FROM users WHERE age IS NOT DISTINCT FROM 18;
+Returns rows whose age equals 18, with PostgreSQL's NULL-safe comparison semantics.
+
+
+-- 34. CONDITIONAL UPSERT / DATA TRANSFORMATION
+
+INSERT INTO products (name, price, stock) SELECT name, price, stock FROM old_products ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price, stock = EXCLUDED.stock;
+Migrates products from an old table while updating existing products with conflicting names.
+
+UPDATE products SET price = CASE WHEN stock = 0 THEN price * 0.9 ELSE price END;
+Applies a 10 percent discount to products that are out of stock.
+
+
+-- 35. TOP-N / LATEST RECORD PATTERNS
+
+SELECT * FROM products ORDER BY price DESC LIMIT 10;
+Returns the ten most expensive products.
+
+SELECT * FROM orders ORDER BY created_at DESC LIMIT 1;
+Returns the most recently created order.
+
+SELECT DISTINCT ON (user_id) * FROM orders ORDER BY user_id, created_at DESC;
+Returns the latest order for every user.
+
+SELECT * FROM orders o WHERE created_at = (SELECT MAX(created_at) FROM orders WHERE user_id = o.user_id);
+Returns each user's latest order using a correlated subquery.
+
+
+-- 36. DUPLICATE DETECTION
+
+SELECT email, COUNT(*) FROM users GROUP BY email HAVING COUNT(*) > 1;
+Returns email addresses that occur more than once.
+
+SELECT name, COUNT(*) FROM products GROUP BY name HAVING COUNT(*) > 1;
+Returns product names that have duplicate rows.
+
+DELETE FROM users a USING users b WHERE a.email = b.email AND a.id > b.id;
+Deletes duplicate users while keeping the row with the smallest ID for each email.
+
+
+-- 37. FOREIGN-KEY / RELATIONSHIP QUERIES
+
+SELECT u.* FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE o.id IS NULL;
+Returns users who do not have any orders.
+
+SELECT p.* FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id WHERE oi.product_id IS NULL;
+Returns products that have never appeared in an order.
+
+SELECT o.id, COUNT(oi.product_id) FROM orders o LEFT JOIN order_items oi ON oi.order_id = o.id GROUP BY o.id;
+Returns each order together with its number of items.
+
+SELECT oi.product_id, SUM(oi.quantity) FROM order_items oi GROUP BY oi.product_id;
+Returns the total quantity sold for every product.
+
+
+-- 38. REAL-WORLD REPORTING QUERIES
+
+SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS orders, SUM(total) AS revenue FROM orders GROUP BY 1 ORDER BY 1;
+Returns monthly order count and revenue.
+
+SELECT user_id, SUM(total) AS revenue FROM orders WHERE status = 'paid' GROUP BY user_id ORDER BY revenue DESC;
+Ranks users by their total paid-order revenue.
+
+SELECT product_id, SUM(quantity) AS units_sold FROM order_items GROUP BY product_id ORDER BY units_sold DESC;
+Ranks products by total units sold.
+
+SELECT d.name, COUNT(e.id) AS employee_count, AVG(e.salary) AS avg_salary FROM departments d LEFT JOIN employees e ON e.department_id = d.id GROUP BY d.id, d.name;
+Returns employee count and average salary for every department.
+
+SELECT status, COUNT(*) AS count, ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS percentage FROM orders GROUP BY status;
+Returns each order status count and its percentage of all orders.
+
+
+-- 39. PAGINATION
+
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;
+Returns the third page of users when each page contains 20 records.
+
+SELECT * FROM users WHERE id > 100 ORDER BY id ASC LIMIT 20;
+Returns the next 20 users after ID 100 using efficient keyset pagination.
+
+SELECT * FROM users WHERE (created_at, id) < ('2026-01-01', 500) ORDER BY created_at DESC, id DESC LIMIT 20;
+Returns the next page using a timestamp-plus-ID cursor for stable keyset pagination.
+
+
+-- 40. SEARCH
+
+SELECT * FROM users WHERE name ILIKE '%john%';
+Performs a basic case-insensitive substring search.
+
+SELECT to_tsvector('english', name) @@ plainto_tsquery('english', 'john');
+Checks whether the name matches the PostgreSQL full-text search query.
+
+CREATE INDEX idx_users_name_fts ON users USING GIN (to_tsvector('english', name));
+Creates a GIN index to accelerate PostgreSQL full-text searches on names.
+
+SELECT * FROM users WHERE to_tsvector('english', name) @@ plainto_tsquery('english', 'software engineer');
+Returns users whose indexed text matches the full-text search phrase.
+
+
+-- 41. ROLES / PERMISSIONS
+
+CREATE ROLE app_user LOGIN PASSWORD 'change_this_password';
+Creates a login role for an application user.
+
+CREATE ROLE reporting_user;
+Creates a database role intended for reporting access.
+
+GRANT CONNECT ON DATABASE myapp TO app_user;
+Allows app_user to connect to the database.
+
+GRANT USAGE ON SCHEMA app TO app_user;
+Allows app_user to access objects within the app schema.
+
+GRANT SELECT ON users TO reporting_user;
+Allows reporting_user to read from users.
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON users TO app_user;
+Allows app_user to perform common CRUD operations on users.
+
+REVOKE DELETE ON users FROM app_user;
+Removes DELETE permission from app_user.
+
+GRANT SELECT ON ALL TABLES IN SCHEMA app TO reporting_user;
+Grants read access to all existing tables in the app schema.
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT ON TABLES TO reporting_user;
+Automatically grants SELECT on future tables created in the app schema.
+
+
+-- 42. SEQUENCES / IDENTITY
+
+SELECT nextval('users_id_seq');
+Advances the users sequence and returns the newly generated sequence value.
+
+SELECT currval('users_id_seq');
+Returns the current sequence value in the current session.
+
+SELECT setval('users_id_seq', 100);
+Sets the sequence's current value to 100.
+
+CREATE TABLE audit_logs (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, message TEXT);
+Creates a table with a modern PostgreSQL identity column.
+
+
+-- 43. SCHEMA INSPECTION
+
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+Lists tables in the public schema.
+
+SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users';
+Returns column names, data types, and nullability information for users.
+
+SELECT constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = 'users';
+Lists constraints defined on users.
+
+SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'users';
+Lists indexes and their definitions for users.
+
+SELECT pg_size_pretty(pg_total_relation_size('users'));
+Returns the total disk size of the users table in human-readable form.
+
+SELECT pg_size_pretty(pg_database_size(current_database()));
+Returns the size of the current database in human-readable form.
+
+
+-- 44. ADVANCED QUERY PATTERNS
+
+SELECT u.id, u.name, COALESCE(SUM(o.total), 0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id GROUP BY u.id, u.name;
+Returns every user with total spending, including users who have never ordered.
+
+SELECT p.name, SUM(oi.quantity * oi.price) AS revenue FROM products p JOIN order_items oi ON oi.product_id = p.id GROUP BY p.id, p.name ORDER BY revenue DESC;
+Returns product revenue ranked from highest to lowest.
+
+SELECT user_id, SUM(total) AS total_spent, RANK() OVER (ORDER BY SUM(total) DESC) AS spending_rank FROM orders GROUP BY user_id;
+Ranks users by their total order spending.
+
+SELECT DATE(created_at) AS day, COUNT(*) AS orders, SUM(COUNT(*)) OVER (ORDER BY DATE(created_at)) AS cumulative_orders FROM orders GROUP BY DATE(created_at);
+Returns daily order counts and the cumulative order count over time.
+
+SELECT user_id, created_at, total, SUM(total) OVER (PARTITION BY user_id ORDER BY created_at) AS running_spend FROM orders;
+Returns each order together with that user's running lifetime spending.
+
+WITH ranked AS (SELECT e.*, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rnk FROM employees e) SELECT * FROM ranked WHERE rnk = 1;
+Returns the highest-paid employee or employees in each department, including ties.
+
+WITH RECURSIVE tree AS (SELECT id, parent_id, name, 0 AS depth FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.id, c.parent_id, c.name, t.depth + 1 FROM categories c JOIN tree t ON c.parent_id = t.id) SELECT * FROM tree ORDER BY depth, id;
+Traverses a hierarchical category tree from root categories downward.
+
+
+-- 45. ROW-LEVEL LOCKING / SAFE COUNTERS
+
+UPDATE products SET stock = stock - 1 WHERE id = 10 AND stock > 0 RETURNING *;
+Atomically decrements stock only when at least one item is available and returns the updated product.
+
+UPDATE accounts SET balance = balance - 100 WHERE id = 1 AND balance >= 100 RETURNING *;
+Atomically withdraws 100 only when the account has enough balance.
+
+SELECT stock FROM products WHERE id = 10 FOR UPDATE;
+Reads and locks a product row so the application can safely perform a subsequent stock update in the transaction.
+
+
+-- 46. AUDIT / SOFT DELETE PATTERNS
+
+UPDATE users SET deleted_at = NOW() WHERE id = 10;
+Soft-deletes a user by recording a deletion timestamp instead of physically deleting the row.
+
+SELECT * FROM users WHERE deleted_at IS NULL;
+Returns only users that have not been soft-deleted.
+
+CREATE INDEX idx_users_active ON users(id) WHERE deleted_at IS NULL;
+Creates a partial index containing only active/non-deleted users.
+
+UPDATE users SET deleted_at = NULL WHERE id = 10;
+Restores a previously soft-deleted user.
+
+
+-- 47. DATABASE MAINTENANCE / ADMIN
+
+SELECT pg_backend_pid();
+Returns the process ID of the current PostgreSQL session.
+
+SELECT pid, usename, state, query FROM pg_stat_activity;
+Returns active PostgreSQL sessions and their current queries.
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid = 12345;
+Terminates the PostgreSQL backend process with the specified PID.
+
+SELECT version();
+Returns the PostgreSQL server version.
+
+SHOW max_connections;
+Returns the current PostgreSQL maximum connection setting.
+
+SHOW work_mem;
+Returns the current memory allocation setting used for internal query operations.
+
+
+-- 48. SECURITY-RELEVANT QUERIES
+
+CREATE ROLE readonly_user LOGIN PASSWORD 'change_this_password';
+Creates a login role intended for read-only access.
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+Gives a role read access to all current public-schema tables.
+
+REVOKE ALL ON users FROM PUBLIC;
+Removes default privileges on users from the PUBLIC role.
+
+GRANT USAGE, SELECT ON SEQUENCE users_id_seq TO app_user;
+Allows an application role to use and read from the sequence associated with users IDs.
+
+SELECT current_user;
+Returns the PostgreSQL role currently executing the query.
+
+SELECT session_user;
+Returns the PostgreSQL role that originally started the current session.
+
+
+-- 49. TRANSACTION ISOLATION
+
+SHOW transaction_isolation;
+Returns the current transaction isolation level.
+
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+Sets the current transaction to the common READ COMMITTED isolation level.
+
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+Makes reads within the transaction see a consistent snapshot.
+
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+Uses the strictest standard isolation level to prevent serialization anomalies.
+
+
+-- 50. USEFUL SQL OPERATORS
+
+SELECT 5 = 5;
+Returns true because both values are equal.
+
+SELECT 5 <> 3;
+Returns true because the values are not equal.
+
+SELECT 5 > 3;
+Returns true because 5 is greater than 3.
+
+SELECT 5 BETWEEN 1 AND 10;
+Returns true because 5 is inside the inclusive range.
+
+SELECT 5 IN (1, 3, 5);
+Returns true because 5 appears in the supplied list.
+
+SELECT 'hello' ILIKE '%ELL%';
+Returns true because ILIKE performs a case-insensitive pattern comparison.
+
+SELECT ARRAY[1,2,3] @> ARRAY[2];
+Returns true because the first array contains the second array.
+
+SELECT '{"role":"admin"}'::jsonb @> '{"role":"admin"}';
+Returns true because the left JSONB value contains the right JSONB structure.
+
+
+-- 51. IMPORTANT SQL ORDER OF EXECUTION
+
+SELECT department_id, AVG(salary) AS avg_salary FROM employees WHERE salary > 30000 GROUP BY department_id HAVING AVG(salary) > 50000 ORDER BY avg_salary DESC LIMIT 5;
+Conceptually SQL processes FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY, and LIMIT to produce the final result.
+
+
+-- 52. COMMON SOFTWARE-ENGINEERING PATTERNS
+
+SELECT EXISTS (SELECT 1 FROM users WHERE email = 'a@example.com');
+Returns true or false depending on whether a user with the given email exists.
+
+SELECT 1 FROM users WHERE email = 'a@example.com' LIMIT 1;
+Returns one lightweight matching row when the email exists.
+
+SELECT COUNT(*) > 0 FROM users WHERE email = 'a@example.com';
+Returns true when at least one matching user exists, although EXISTS is generally preferable for existence checks.
+
+SELECT id FROM users WHERE email = 'a@example.com' FOR UPDATE;
+Finds and locks the user row for safe modification inside a transaction.
+
+INSERT INTO audit_logs (message) VALUES ('User created');
+Adds an audit-log record describing an application event.
+
+UPDATE users SET updated_at = NOW() WHERE id = 1 RETURNING id, updated_at;
+Updates a timestamp and immediately returns the changed values.
+
+SELECT * FROM orders WHERE status = ANY(ARRAY['pending','paid']);
+Returns orders whose status matches any value in the supplied PostgreSQL array.
+
+SELECT * FROM users WHERE id = ANY(ARRAY[1,2,3]);
+Returns users whose IDs appear in the supplied array.
+
+SELECT id, name FROM users ORDER BY id DESC FETCH FIRST 10 ROWS ONLY;
+Returns the first ten rows after sorting by ID in descending order using standard SQL pagination syntax.
+
+
+-- 53. CLEANUP / DROP COMMANDS
+
+DROP INDEX IF EXISTS idx_users_email;
+Deletes the index if it exists.
+
+DROP VIEW IF EXISTS active_users;
+Deletes the view if it exists.
+
+DROP FUNCTION IF EXISTS add_numbers(INT, INT);
+Deletes the specified function if it exists.
+
+DROP PROCEDURE IF EXISTS increase_stock(BIGINT, INT);
+Deletes the specified procedure if it exists.
+
+DROP TRIGGER IF EXISTS users_set_updated_at ON users;
+Deletes the trigger if it exists.
+
+DROP TABLE IF EXISTS order_items CASCADE;
+Deletes order_items and dependent objects when necessary.

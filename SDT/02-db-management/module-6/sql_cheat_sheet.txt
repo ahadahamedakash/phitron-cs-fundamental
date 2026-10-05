@@ -1,0 +1,1642 @@
+
+Format: one SQL query, one-line explanation, one blank line.
+
+This note covers practical SQL from fundamentals through advanced software-engineering patterns.
+
+1. Database & Schema
+
+CREATE DATABASE myapp;
+Creates a new database named myapp.
+
+DROP DATABASE myapp;
+Deletes the myapp database.
+
+CREATE SCHEMA app;
+Creates a namespace named app inside the current database.
+
+DROP SCHEMA app;
+Deletes the app schema when it contains no dependent objects.
+
+DROP SCHEMA app CASCADE;
+Deletes the app schema and dependent objects.
+
+SET search_path TO app, public;
+Makes PostgreSQL search the app schema before public for unqualified objects.
+
+SELECT current_database();
+Returns the name of the current database.
+
+SELECT current_schema();
+Returns the current schema.
+
+2. Create Tables
+
+CREATE TABLE users (id BIGSERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL, age INT, created_at TIMESTAMPTZ DEFAULT NOW());
+Creates a users table with an auto-incrementing primary key, required fields, a unique email, and a default creation timestamp.
+
+CREATE TABLE departments (id BIGSERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE);
+Creates a departments table with a unique department name.
+
+CREATE TABLE employees (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, salary NUMERIC(12,2), department_id BIGINT REFERENCES departments(id));
+Creates an employees table with a foreign key connecting employees to departments.
+
+CREATE TABLE products (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, price NUMERIC(12,2) CHECK (price >= 0), stock INT DEFAULT 0 CHECK (stock >= 0));
+Creates a products table with validation preventing negative prices and stock.
+
+CREATE TABLE orders (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id), status VARCHAR(30) DEFAULT 'pending', total NUMERIC(12,2) NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+Creates an orders table connected to users with a default pending status.
+
+CREATE TABLE order_items (order_id BIGINT REFERENCES orders(id) ON DELETE CASCADE, product_id BIGINT REFERENCES products(id), quantity INT NOT NULL CHECK (quantity > 0), price NUMERIC(12,2) NOT NULL, PRIMARY KEY (order_id, product_id));
+Creates a junction table connecting orders and products with quantity and price.
+
+CREATE TABLE IF NOT EXISTS logs (id BIGSERIAL PRIMARY KEY, message TEXT);
+Creates the logs table only if it does not already exist.
+
+DROP TABLE logs;
+Deletes the logs table and all its data.
+
+DROP TABLE IF EXISTS logs;
+Deletes logs if it exists without failing if it does not.
+
+3. ALTER TABLE
+
+ALTER TABLE users ADD COLUMN phone VARCHAR(30);
+Adds a phone column to users.
+
+ALTER TABLE users DROP COLUMN phone;
+Removes the phone column from users.
+
+ALTER TABLE users RENAME COLUMN name TO full_name;
+Renames the name column to full_name.
+
+ALTER TABLE users RENAME TO customers;
+Renames the users table to customers.
+
+ALTER TABLE users ALTER COLUMN age SET NOT NULL;
+Makes age a required column.
+
+ALTER TABLE users ALTER COLUMN age DROP NOT NULL;
+Allows age to contain NULL.
+
+ALTER TABLE users ALTER COLUMN age SET DEFAULT 18;
+Sets 18 as the default value for age.
+
+ALTER TABLE users ALTER COLUMN age DROP DEFAULT;
+Removes the default value from age.
+
+ALTER TABLE users ALTER COLUMN age TYPE BIGINT;
+Changes the age column type to BIGINT.
+
+ALTER TABLE users ADD CONSTRAINT users_age_check CHECK (age >= 0);
+Adds a constraint preventing negative ages.
+
+ALTER TABLE users DROP CONSTRAINT users_age_check;
+Removes the named age constraint.
+
+ALTER TABLE employees ADD CONSTRAINT employees_department_fk FOREIGN KEY (department_id) REFERENCES departments(id);
+Adds a foreign-key relationship between employees and departments.
+
+4. INSERT
+
+INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 25);
+Inserts one user.
+
+INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 25), ('Bob', 'bob@example.com', 30);
+Inserts multiple users in one query.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') RETURNING *;
+Inserts a user and returns the inserted row.
+
+INSERT INTO users (name, email) SELECT name, email FROM customers;
+Inserts rows into users using another query's result.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO NOTHING;
+Inserts the user but ignores a duplicate email conflict.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name;
+Inserts a user or updates the existing user when the email conflicts.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING *;
+Performs an upsert and returns the affected row.
+
+5. SELECT
+
+SELECT * FROM users;
+Returns every column and row from users.
+
+SELECT id, name, email FROM users;
+Returns only the selected columns.
+
+SELECT DISTINCT age FROM users;
+Returns each different age once.
+
+SELECT name AS user_name FROM users;
+Returns name using the alias user_name.
+
+SELECT 10 + 20 AS result;
+Returns the calculated value 30.
+
+SELECT * FROM users WHERE age >= 18;
+Returns users whose age is at least 18.
+
+SELECT * FROM users WHERE age BETWEEN 18 AND 30;
+Returns users whose age is between 18 and 30 inclusive.
+
+SELECT * FROM users WHERE age IN (18, 21, 25);
+Returns users whose age matches one of the listed values.
+
+SELECT * FROM users WHERE email IS NULL;
+Returns users whose email is NULL.
+
+SELECT * FROM users WHERE email IS NOT NULL;
+Returns users whose email is not NULL.
+
+SELECT * FROM users WHERE name LIKE 'A%';
+Returns users whose names start with A.
+
+SELECT * FROM users WHERE name ILIKE '%ahad%';
+Returns users whose names contain ahad without case sensitivity.
+
+SELECT * FROM users WHERE age >= 18 AND age <= 60;
+Returns users satisfying both conditions.
+
+SELECT * FROM users WHERE age < 18 OR age > 60;
+Returns users satisfying at least one condition.
+
+SELECT * FROM users WHERE NOT (age >= 18);
+Returns users who do not satisfy the age-at-least-18 condition.
+
+SELECT * FROM users ORDER BY created_at DESC;
+Returns users from newest to oldest.
+
+SELECT * FROM users ORDER BY name ASC, created_at DESC;
+Sorts by name ascending and then creation time descending.
+
+SELECT * FROM users LIMIT 20;
+Returns at most 20 rows.
+
+SELECT * FROM users OFFSET 20 LIMIT 20;
+Skips the first 20 rows and returns the next 20.
+
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;
+Returns page 3 when using 20-row offset pagination.
+
+SELECT * FROM users WHERE id > 100 ORDER BY id LIMIT 20;
+Returns the next 20 users after ID 100 using keyset pagination.
+
+SELECT COALESCE(phone, 'N/A') FROM users;
+Returns phone or N/A when phone is NULL.
+
+SELECT NULLIF(age, 0) FROM users;
+Returns NULL when age is zero and otherwise returns age.
+
+6. UPDATE
+
+UPDATE users SET age = 26 WHERE id = 1;
+Changes user 1's age to 26.
+
+UPDATE users SET age = age + 1 WHERE age >= 18;
+Increases the age of every adult user by one.
+
+UPDATE users SET name = 'Updated Name', age = 30 WHERE id = 1;
+Updates multiple columns of one user.
+
+UPDATE users SET age = age + 1 RETURNING *;
+Updates users and returns every changed row.
+
+UPDATE users SET name = INITCAP(name);
+Converts names to title case.
+
+UPDATE users SET email = LOWER(email);
+Converts all emails to lowercase.
+
+7. DELETE
+
+DELETE FROM users WHERE id = 1;
+Deletes user 1.
+
+DELETE FROM users WHERE age < 18;
+Deletes users younger than 18.
+
+DELETE FROM users WHERE id = 1 RETURNING *;
+Deletes user 1 and returns the deleted row.
+
+DELETE FROM users;
+Deletes every row while keeping the table.
+
+DELETE FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Deletes users who have never placed an order.
+
+8. TRUNCATE
+
+TRUNCATE TABLE logs;
+Removes all rows from logs while keeping the table structure.
+
+TRUNCATE TABLE logs RESTART IDENTITY;
+Removes all rows and resets identity sequences.
+
+TRUNCATE TABLE logs CASCADE;
+Truncates logs and dependent tables affected by foreign keys.
+
+9. Aggregate Functions
+
+SELECT COUNT(*) FROM users;
+Returns the total number of user rows.
+
+SELECT COUNT(email) FROM users;
+Returns the number of users whose email is not NULL.
+
+SELECT COUNT(DISTINCT email) FROM users;
+Returns the number of distinct non-NULL emails.
+
+SELECT SUM(total) FROM orders;
+Returns the sum of all order totals.
+
+SELECT AVG(total) FROM orders;
+Returns the average order total.
+
+SELECT MIN(total), MAX(total) FROM orders;
+Returns the smallest and largest order totals.
+
+SELECT ROUND(AVG(total), 2) FROM orders;
+Returns the average order total rounded to two decimals.
+
+SELECT STRING_AGG(name, ', ') FROM users;
+Combines user names into one comma-separated string.
+
+SELECT ARRAY_AGG(id) FROM users;
+Collects user IDs into a PostgreSQL array.
+
+10. GROUP BY
+
+SELECT status, COUNT(*) FROM orders GROUP BY status;
+Returns the number of orders for each status.
+
+SELECT user_id, COUNT(*) AS order_count FROM orders GROUP BY user_id;
+Returns the number of orders for each user.
+
+SELECT user_id, SUM(total) AS total_spent FROM orders GROUP BY user_id;
+Returns total spending for each user.
+
+SELECT department_id, AVG(salary) AS avg_salary FROM employees GROUP BY department_id;
+Returns the average salary for each department.
+
+SELECT DATE(created_at), COUNT(*) FROM orders GROUP BY DATE(created_at);
+Returns the number of orders created on each date.
+
+SELECT department_id, COUNT(*) FROM employees WHERE salary > 50000 GROUP BY department_id;
+Counts employees earning above 50000 in each department.
+
+11. HAVING
+
+SELECT department_id, COUNT() FROM employees GROUP BY department_id HAVING COUNT() >= 5;
+Returns departments containing at least five employees.
+
+SELECT user_id, SUM(total) FROM orders GROUP BY user_id HAVING SUM(total) > 1000;
+Returns users whose total spending exceeds 1000.
+
+SELECT email, COUNT() FROM users GROUP BY email HAVING COUNT() > 1;
+Returns duplicate email addresses.
+
+SELECT department_id, AVG(salary) FROM employees GROUP BY department_id HAVING AVG(salary) > 50000;
+Returns departments whose average salary exceeds 50000.
+
+12. CASE
+
+SELECT name, CASE WHEN age >= 18 THEN 'adult' ELSE 'minor' END AS category FROM users;
+Classifies users as adult or minor.
+
+SELECT name, CASE WHEN age >= 60 THEN 'senior' WHEN age >= 18 THEN 'adult' ELSE 'minor' END AS category FROM users;
+Classifies users as senior, adult, or minor.
+
+SELECT status, COUNT(*) FILTER (WHERE total >= 1000) AS large_orders FROM orders GROUP BY status;
+Counts large orders separately for each status.
+
+SELECT COUNT() FILTER (WHERE age >= 18) AS adults, COUNT() FILTER (WHERE age < 18) AS minors FROM users;
+Returns adult and minor counts in one row.
+
+13. String Functions
+
+SELECT LOWER(name) FROM users;
+Converts names to lowercase.
+
+SELECT UPPER(name) FROM users;
+Converts names to uppercase.
+
+SELECT LENGTH(name) FROM users;
+Returns the number of characters in each name.
+
+SELECT TRIM(name) FROM users;
+Removes leading and trailing whitespace.
+
+SELECT REPLACE(name, 'old', 'new') FROM users;
+Replaces old text with new text.
+
+SELECT SUBSTRING(name FROM 1 FOR 3) FROM users;
+Returns the first three characters.
+
+SELECT CONCAT(name, ' <', email, '>') FROM users;
+Combines name and email into one string.
+
+SELECT CONCAT_WS(' - ', name, email) FROM users;
+Combines values using a separator.
+
+SELECT SPLIT_PART(email, '@', 2) FROM users;
+Returns the domain portion of each email.
+
+14. Date & Time
+
+SELECT NOW();
+Returns the current timestamp.
+
+SELECT CURRENT_DATE;
+Returns the current database date.
+
+SELECT AGE(NOW(), created_at) FROM users;
+Returns the elapsed time since each user's creation.
+
+SELECT EXTRACT(YEAR FROM created_at) FROM users;
+Extracts the year from a timestamp.
+
+SELECT DATE_TRUNC('month', created_at) FROM orders;
+Truncates timestamps to the beginning of their month.
+
+SELECT created_at + INTERVAL '7 days' FROM users;
+Adds seven days to each timestamp.
+
+SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL '30 days';
+Returns orders created during the last 30 days.
+
+SELECT * FROM orders WHERE created_at >= CURRENT_DATE AND created_at < CURRENT_DATE + INTERVAL '1 day';
+Returns today's orders using a half-open time range.
+
+15. JOINs
+
+SELECT u.name, o.id FROM users u INNER JOIN orders o ON o.user_id = u.id;
+Returns users that have matching orders.
+
+SELECT u.name, o.id FROM users u LEFT JOIN orders o ON o.user_id = u.id;
+Returns every user and any matching orders.
+
+SELECT u.name, o.id FROM users u RIGHT JOIN orders o ON o.user_id = u.id;
+Returns every order and any matching user.
+
+SELECT u.name, o.id FROM users u FULL OUTER JOIN orders o ON o.user_id = u.id;
+Returns all users and all orders while matching related rows.
+
+SELECT e.name, d.name FROM employees e JOIN departments d ON d.id = e.department_id;
+Returns employees with their department names.
+
+SELECT p.name, oi.quantity FROM products p CROSS JOIN order_items oi;
+Returns every possible product/order-item combination.
+
+SELECT e.name, m.name AS manager FROM employees e JOIN employees m ON e.manager_id = m.id;
+Uses a self-join to retrieve employees and their managers.
+
+SELECT u.name FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users who have at least one order.
+
+SELECT u.name FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users who have no orders.
+
+16. SUBQUERIES — Basic
+
+SELECT * FROM users WHERE age > (SELECT AVG(age) FROM users);
+Returns users older than the average user.
+
+SELECT * FROM products WHERE price = (SELECT MAX(price) FROM products);
+Returns the most expensive products.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+Returns users who have placed at least one order.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 1000);
+Returns users who have placed an order above 1000.
+
+SELECT * FROM products WHERE id IN (SELECT product_id FROM order_items);
+Returns products that have appeared in an order.
+
+SELECT * FROM users WHERE id NOT IN (SELECT user_id FROM orders WHERE user_id IS NOT NULL);
+Returns users whose IDs do not appear among the specified orders.
+
+SELECT name, (SELECT COUNT(*) FROM orders) AS total_orders FROM users;
+Returns every user together with the total number of orders in the system.
+
+17. Scalar Subqueries
+
+SELECT name, (SELECT AVG(age) FROM users) AS average_age FROM users;
+Returns every user together with the overall average age.
+
+SELECT name, salary, salary - (SELECT AVG(salary) FROM employees) AS difference FROM employees;
+Returns each employee's difference from the company average salary.
+
+SELECT * FROM products WHERE price > (SELECT AVG(price) FROM products);
+Returns products priced above the average product price.
+
+18. EXISTS / NOT EXISTS
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users for whom at least one matching order exists.
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.total > 1000);
+Returns users who have at least one order above 1000.
+
+SELECT * FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users who have never placed an order.
+
+SELECT * FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id);
+Returns products that have never been ordered.
+
+SELECT * FROM departments d WHERE NOT EXISTS (SELECT 1 FROM employees e WHERE e.department_id = d.id);
+Returns departments containing no employees.
+
+19. Correlated Subqueries
+
+SELECT u.id, u.name, (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) AS order_count FROM users u;
+Returns each user together with that user's order count.
+
+SELECT u.id, u.name, (SELECT MAX(o.total) FROM orders o WHERE o.user_id = u.id) AS highest_order FROM users u;
+Returns each user's highest order value.
+
+SELECT p.id, p.name, (SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.product_id = p.id) AS units_sold FROM products p;
+Returns every product with its total quantity sold.
+
+SELECT e.name, e.salary, (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department_id = e.department_id) AS department_avg FROM employees e;
+Returns each employee together with the average salary of that employee's department.
+
+SELECT o.* FROM orders o WHERE o.total > (SELECT AVG(o2.total) FROM orders o2 WHERE o2.user_id = o.user_id);
+Returns orders whose value is above that user's average order value.
+
+20. Subquery in FROM — Derived Table
+
+SELECT * FROM (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) AS user_totals;
+Creates a temporary derived result containing total spending per user.
+
+SELECT * FROM (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) AS user_totals WHERE spent > 1000;
+Returns users whose calculated spending exceeds 1000.
+
+SELECT AVG(spent) FROM (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) AS user_totals;
+Returns the average total spending among users with orders.
+
+SELECT MAX(spent) FROM (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) AS user_totals;
+Returns the highest total spending of any user.
+
+21. Nested Subqueries
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > (SELECT AVG(total) FROM orders));
+Returns users who have at least one order above the overall average order value.
+
+SELECT * FROM products WHERE id IN (SELECT product_id FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE status = 'paid'));
+Returns products that appear in paid orders.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > (SELECT MAX(total) * 0.8 FROM orders));
+Returns users who placed an order above 80% of the maximum order value.
+
+SELECT * FROM employees WHERE salary > (SELECT AVG(dept_avg) FROM (SELECT department_id, AVG(salary) AS dept_avg FROM employees GROUP BY department_id) x);
+Returns employees whose salary exceeds the average of department-average salaries.
+
+22. Subquery with HAVING
+
+SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id HAVING SUM(total) > (SELECT AVG(total) FROM orders);
+Returns users whose total spending exceeds the average individual order value.
+
+SELECT department_id, AVG(salary) AS avg_salary FROM employees GROUP BY department_id HAVING AVG(salary) > (SELECT AVG(salary) FROM employees);
+Returns departments whose average salary is above the company average.
+
+SELECT user_id, COUNT() AS order_count FROM orders GROUP BY user_id HAVING COUNT() > (SELECT AVG(order_count) FROM (SELECT user_id, COUNT(*) AS order_count FROM orders GROUP BY user_id) x);
+Returns users whose order count is above the average number of orders per user.
+
+23. ALL / ANY / SOME
+
+SELECT * FROM products p WHERE price > ALL (SELECT price FROM products WHERE category_id = 10);
+Returns products priced higher than every product in category 10.
+
+SELECT * FROM products WHERE price > ANY (SELECT price FROM products WHERE category_id = 10);
+Returns products priced higher than at least one product in category 10.
+
+SELECT * FROM employees WHERE salary >= ALL (SELECT salary FROM employees WHERE department_id = 10);
+Returns employees whose salary is at least as high as every salary in department 10.
+
+SELECT * FROM employees WHERE salary = ANY (SELECT salary FROM employees WHERE department_id = 10);
+Returns employees whose salary matches at least one salary in department 10.
+
+SELECT * FROM products WHERE price > SOME (SELECT price FROM products WHERE category_id = 10);
+Returns products priced higher than at least one product in category 10.
+
+24. Maximum / Minimum Patterns
+
+SELECT * FROM employees WHERE salary = (SELECT MAX(salary) FROM employees);
+Returns all employees with the highest salary.
+
+SELECT * FROM employees e WHERE salary = (SELECT MAX(e2.salary) FROM employees e2 WHERE e2.department_id = e.department_id);
+Returns the highest-paid employee or employees in each department.
+
+SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees);
+Returns the second-highest distinct salary.
+
+SELECT * FROM employees WHERE salary = (SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees));
+Returns employees with the second-highest distinct salary.
+
+SELECT DISTINCT salary FROM employees ORDER BY salary DESC OFFSET 1 LIMIT 1;
+Returns the second-highest distinct salary using sorting.
+
+25. Above / Below Group Average
+
+SELECT e.* FROM employees e WHERE e.salary > (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department_id = e.department_id);
+Returns employees earning above their department average.
+
+SELECT e.* FROM employees e WHERE e.salary < (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department_id = e.department_id);
+Returns employees earning below their department average.
+
+SELECT p.* FROM products p WHERE p.price > (SELECT AVG(p2.price) FROM products p2 WHERE p2.category_id = p.category_id);
+Returns products priced above their category average.
+
+SELECT o.* FROM orders o WHERE o.total > (SELECT AVG(o2.total) FROM orders o2 WHERE o2.user_id = o.user_id);
+Returns orders above the customer's average order value.
+
+26. COMMON TABLE EXPRESSIONS — WITH
+
+WITH active_users AS (SELECT * FROM users WHERE deleted_at IS NULL) SELECT * FROM active_users;
+Creates a named intermediate result and queries it.
+
+WITH expensive_products AS (SELECT * FROM products WHERE price > 1000) SELECT * FROM expensive_products;
+Creates a named result containing expensive products.
+
+WITH adult_users AS (SELECT id, name FROM users WHERE age >= 18) SELECT COUNT(*) FROM adult_users;
+Creates an adult_users result and counts it.
+
+27. CTE with Aggregation
+
+WITH user_totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM user_totals;
+Creates a per-user spending summary.
+
+WITH user_totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM user_totals WHERE spent > 5000;
+Returns users whose spending exceeds 5000.
+
+WITH department_stats AS (SELECT department_id, AVG(salary) AS avg_salary, COUNT(*) AS employee_count FROM employees GROUP BY department_id) SELECT * FROM department_stats;
+Creates a reusable department salary and employee summary.
+
+28. Multiple CTEs
+
+WITH users_count AS (SELECT COUNT() AS total FROM users), orders_count AS (SELECT COUNT() AS total FROM orders) SELECT users_count.total AS users, orders_count.total AS orders FROM users_count CROSS JOIN orders_count;
+Calculates user and order counts separately and combines them into one result.
+
+WITH user_totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id), active_users AS (SELECT id, name FROM users WHERE deleted_at IS NULL) SELECT a.name, COALESCE(t.spent, 0) FROM active_users a LEFT JOIN user_totals t ON t.user_id = a.id;
+Combines active users with their calculated spending.
+
+WITH products_sold AS (SELECT product_id, SUM(quantity) AS units FROM order_items GROUP BY product_id), product_revenue AS (SELECT product_id, SUM(quantity * price) AS revenue FROM order_items GROUP BY product_id) SELECT p.name, s.units, r.revenue FROM products p LEFT JOIN products_sold s ON s.product_id = p.id LEFT JOIN product_revenue r ON r.product_id = p.id;
+Combines multiple product-level calculations into one report.
+
+29. CTE Chaining
+
+WITH user_totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id), high_value_users AS (SELECT user_id, spent FROM user_totals WHERE spent > 5000) SELECT * FROM high_value_users;
+Uses the result of one CTE as the input of another CTE.
+
+WITH monthly_sales AS (SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS revenue FROM orders GROUP BY 1), high_sales_months AS (SELECT * FROM monthly_sales WHERE revenue > 100000) SELECT * FROM high_sales_months ORDER BY month;
+Builds monthly revenue first and then filters high-revenue months.
+
+30. CTE + JOIN
+
+WITH order_totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT u.name, o.spent FROM users u JOIN order_totals o ON o.user_id = u.id;
+Joins users with a CTE containing their total spending.
+
+WITH latest_orders AS (SELECT user_id, MAX(created_at) AS latest_order FROM orders GROUP BY user_id) SELECT u.name, l.latest_order FROM users u LEFT JOIN latest_orders l ON l.user_id = u.id;
+Returns every user with the timestamp of their latest order.
+
+31. CTE + Window Functions
+
+WITH ranked_users AS (SELECT user_id, SUM(total) AS spent, RANK() OVER (ORDER BY SUM(total) DESC) AS rank FROM orders GROUP BY user_id) SELECT * FROM ranked_users;
+Calculates total spending and ranks users by spending.
+
+WITH ranked_employees AS (SELECT e.*, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank FROM employees e) SELECT * FROM ranked_employees WHERE rank <= 3;
+Returns the top three salary ranks in every department.
+
+WITH ranked_products AS (SELECT p.*, ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) AS rn FROM products p) SELECT * FROM ranked_products WHERE rn <= 5;
+Returns the five most expensive products from each category.
+
+32. CTE + UPDATE
+
+WITH inactive_users AS (SELECT id FROM users WHERE last_login < NOW() - INTERVAL '1 year') UPDATE users SET status = 'inactive' WHERE id IN (SELECT id FROM inactive_users);
+Finds inactive users with a CTE and updates their status.
+
+WITH target AS (SELECT id FROM products WHERE stock = 0) UPDATE products SET status = 'out_of_stock' WHERE id IN (SELECT id FROM target);
+Finds out-of-stock products and updates their status.
+
+33. CTE + DELETE
+
+WITH inactive_users AS (SELECT id FROM users WHERE deleted_at IS NOT NULL) DELETE FROM users WHERE id IN (SELECT id FROM inactive_users);
+Finds soft-deleted users and permanently removes them.
+
+WITH duplicates AS (SELECT MIN(id) AS keep_id, email FROM users GROUP BY email HAVING COUNT(*) > 1) DELETE FROM users u USING duplicates d WHERE u.email = d.email AND u.id <> d.keep_id;
+Deletes duplicate users while keeping the smallest ID for each email.
+
+34. CTE + INSERT
+
+WITH new_user AS (SELECT 'Alice' AS name, 'alice@example.com' AS email) INSERT INTO users (name, email) SELECT name, email FROM new_user;
+Creates an intermediate result and inserts it into users.
+
+WITH source AS (SELECT name, email FROM customers WHERE active = true) INSERT INTO users (name, email) SELECT name, email FROM source;
+Copies selected active customers into users.
+
+35. Data-Modifying CTE + RETURNING
+
+WITH deleted AS (DELETE FROM users WHERE id = 10 RETURNING *) SELECT * FROM deleted;
+Deletes user 10 and immediately returns the deleted row.
+
+WITH updated AS (UPDATE products SET stock = stock - 1 WHERE id = 10 RETURNING *) SELECT * FROM updated;
+Updates product stock and returns the modified row.
+
+WITH inserted AS (INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com') RETURNING *) SELECT * FROM inserted;
+Inserts a user and returns the new row through the CTE.
+
+36. Multi-Step CTE
+
+WITH new_order AS (INSERT INTO orders (user_id, total) VALUES (1, 500) RETURNING id), new_item AS (INSERT INTO order_items (order_id, product_id, quantity, price) SELECT id, 10, 2, 250 FROM new_order RETURNING *) SELECT * FROM new_item;
+Creates an order, uses its generated ID to create an order item, and returns the item.
+
+WITH updated AS (UPDATE products SET stock = stock - 2 WHERE id = 10 AND stock >= 2 RETURNING id) INSERT INTO audit_logs (message) SELECT 'Stock updated for product ' || id FROM updated;
+Updates stock only when enough inventory exists and creates an audit record only for successful updates.
+
+37. Recursive CTE
+
+WITH RECURSIVE numbers AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM numbers WHERE n < 10) SELECT * FROM numbers;
+Generates numbers from 1 through 10 recursively.
+
+WITH RECURSIVE numbers AS (SELECT 1 AS n UNION ALL SELECT n * 2 FROM numbers WHERE n < 100) SELECT * FROM numbers;
+Generates powers of two up to 128.
+
+WITH RECURSIVE dates AS (SELECT CURRENT_DATE AS day UNION ALL SELECT day + 1 FROM dates WHERE day < CURRENT_DATE + INTERVAL '6 days') SELECT * FROM dates;
+Generates the dates for the next seven days.
+
+WITH RECURSIVE employee_tree AS (SELECT id, manager_id, name, 0 AS depth FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.id, e.manager_id, e.name, t.depth + 1 FROM employees e JOIN employee_tree t ON e.manager_id = t.id) SELECT * FROM employee_tree;
+Traverses an employee-manager hierarchy from top-level managers downward.
+
+38. Recursive Hierarchies
+
+WITH RECURSIVE category_tree AS (SELECT id, parent_id, name, 0 AS depth FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.id, c.parent_id, c.name, ct.depth + 1 FROM categories c JOIN category_tree ct ON c.parent_id = ct.id) SELECT * FROM category_tree ORDER BY depth, id;
+Builds a hierarchical category tree from root categories downward.
+
+WITH RECURSIVE category_tree AS (SELECT id, parent_id, name, name::TEXT AS path FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.id, c.parent_id, c.name, ct.path || ' > ' || c.name FROM categories c JOIN category_tree ct ON c.parent_id = ct.id) SELECT * FROM category_tree;
+Builds a readable parent-to-child path for every category.
+
+WITH RECURSIVE tree AS (SELECT id, parent_id, name, 0 AS depth FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.id, c.parent_id, c.name, t.depth + 1 FROM categories c JOIN tree t ON c.parent_id = t.id WHERE t.depth < 5) SELECT * FROM tree;
+Traverses a hierarchy while limiting recursion to five levels.
+
+39. LATERAL Subqueries
+
+SELECT u.id, u.name, o.id, o.created_at FROM users u CROSS JOIN LATERAL (SELECT id, created_at FROM orders o WHERE o.user_id = u.id ORDER BY created_at DESC LIMIT 1) o;
+Returns each user together with their latest order using a correlated FROM-subquery.
+
+SELECT u.id, u.name, o.* FROM users u LEFT JOIN LATERAL (SELECT * FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 3) o ON TRUE;
+Returns every user with up to their three latest orders.
+
+SELECT d.id, d.name, e.* FROM departments d LEFT JOIN LATERAL (SELECT * FROM employees e WHERE e.department_id = d.id ORDER BY salary DESC LIMIT 3) e ON TRUE;
+Returns the top three highest-paid employees for every department.
+
+SELECT u.id, u.name, o.* FROM users u LEFT JOIN LATERAL (SELECT * FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 5) o ON TRUE;
+Returns up to five latest orders for every user.
+
+40. Top-N Per Group
+
+WITH ranked AS (SELECT e.*, ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn FROM employees e) SELECT * FROM ranked WHERE rn <= 3;
+Returns the three highest-paid employees from every department.
+
+WITH ranked AS (SELECT p.*, ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) AS rn FROM products p) SELECT * FROM ranked WHERE rn <= 5;
+Returns the five most expensive products from every category.
+
+SELECT d.id, d.name, e.* FROM departments d LEFT JOIN LATERAL (SELECT * FROM employees e WHERE e.department_id = d.id ORDER BY salary DESC LIMIT 3) e ON TRUE;
+Returns the top three employees per department using LATERAL.
+
+41. Duplicate Detection
+
+SELECT email, COUNT() FROM users GROUP BY email HAVING COUNT() > 1;
+Returns email addresses appearing more than once.
+
+SELECT name, COUNT() FROM products GROUP BY name HAVING COUNT() > 1;
+Returns duplicate product names.
+
+WITH duplicates AS (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn FROM users) DELETE FROM users WHERE id IN (SELECT id FROM duplicates WHERE rn > 1);
+Deletes duplicate users while keeping the first row for each email.
+
+WITH duplicates AS (SELECT id, ROW_NUMBER() OVER (PARTITION BY name, email ORDER BY id) AS rn FROM users) DELETE FROM users WHERE id IN (SELECT id FROM duplicates WHERE rn > 1);
+Deletes duplicate users based on name and email while keeping the first record.
+
+42. Window Functions
+
+SELECT name, salary, AVG(salary) OVER () AS company_avg FROM employees;
+Returns each employee's salary with the company-wide average.
+
+SELECT name, salary, AVG(salary) OVER (PARTITION BY department_id) AS department_avg FROM employees;
+Returns each employee's salary with their department average.
+
+SELECT name, salary, ROW_NUMBER() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Assigns a unique row number based on salary.
+
+SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Ranks employees by salary while leaving gaps after ties.
+
+SELECT name, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rank_no FROM employees;
+Ranks employees by salary without gaps after ties.
+
+SELECT name, salary, LAG(salary) OVER (ORDER BY salary) AS previous_salary FROM employees;
+Returns each salary with the previous salary.
+
+SELECT name, salary, LEAD(salary) OVER (ORDER BY salary) AS next_salary FROM employees;
+Returns each salary with the next salary.
+
+SELECT name, salary, FIRST_VALUE(salary) OVER (ORDER BY salary DESC) AS highest_salary FROM employees;
+Returns each salary alongside the highest salary.
+
+SELECT name, salary, SUM(salary) OVER (ORDER BY id) AS running_total FROM employees;
+Returns a cumulative salary total.
+
+SELECT department_id, name, salary, ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn FROM employees;
+Numbers employees separately inside each department.
+
+43. Set Operations
+
+SELECT email FROM users UNION SELECT email FROM customers;
+Combines results and removes duplicates.
+
+SELECT email FROM users UNION ALL SELECT email FROM customers;
+Combines results while keeping duplicates.
+
+SELECT email FROM users INTERSECT SELECT email FROM customers;
+Returns values appearing in both results.
+
+SELECT email FROM users EXCEPT SELECT email FROM customers;
+Returns values appearing in users but not customers.
+
+44. Constraints
+
+ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+Adds a uniqueness constraint to email.
+
+ALTER TABLE users ADD CONSTRAINT users_age_check CHECK (age >= 0 AND age <= 150);
+Restricts age to the range 0 through 150.
+
+ALTER TABLE orders ADD CONSTRAINT orders_total_check CHECK (total >= 0);
+Prevents negative order totals.
+
+ALTER TABLE orders ADD CONSTRAINT orders_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT;
+Prevents deletion of a user while dependent orders exist.
+
+ALTER TABLE orders ADD CONSTRAINT orders_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+Automatically deletes dependent orders when their user is deleted.
+
+ALTER TABLE order_items ADD CONSTRAINT order_product_unique UNIQUE (order_id, product_id);
+Prevents the same product from appearing twice in one order.
+
+45. Indexes
+
+CREATE INDEX idx_users_email ON users(email);
+Creates an index that can speed up email searches.
+
+CREATE UNIQUE INDEX idx_users_email_unique ON users(email);
+Creates a unique index that prevents duplicate emails and speeds up lookups.
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+Creates an index useful for filtering and joining orders by user_id.
+
+CREATE INDEX idx_orders_created_at ON orders(created_at);
+Creates an index useful for time-based order queries.
+
+CREATE INDEX idx_orders_user_created ON orders(user_id, created_at DESC);
+Creates a composite index useful for user filtering and recent-order sorting.
+
+CREATE INDEX idx_users_lower_email ON users(LOWER(email));
+Creates a functional index for case-insensitive email searches.
+
+CREATE INDEX idx_orders_pending ON orders(created_at) WHERE status = 'pending';
+Creates a partial index containing only pending orders.
+
+DROP INDEX idx_users_email;
+Removes the specified index.
+
+REINDEX INDEX idx_users_email_unique;
+Rebuilds the specified index.
+
+ANALYZE users;
+Updates planner statistics for the users table.
+
+46. EXPLAIN & Performance
+
+EXPLAIN SELECT * FROM users WHERE email = 'a@example.com';
+Shows PostgreSQL's estimated execution plan.
+
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'a@example.com';
+Executes the query and shows the actual execution plan and timing.
+
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM orders WHERE user_id = 10;
+Shows actual execution details and buffer usage for performance analysis.
+
+VACUUM users;
+Reclaims storage from dead tuples and maintains table health.
+
+VACUUM ANALYZE users;
+Vacuums the table and refreshes planner statistics.
+
+VACUUM FULL users;
+Rewrites the table to reclaim more disk space but requires a stronger lock.
+
+47. Transactions
+
+BEGIN;
+Starts a database transaction.
+
+COMMIT;
+Permanently saves the transaction's changes.
+
+ROLLBACK;
+Cancels the transaction's changes.
+
+SAVEPOINT before_payment;
+Creates a point to which the transaction can partially roll back.
+
+ROLLBACK TO SAVEPOINT before_payment;
+Rolls back changes made after the savepoint.
+
+RELEASE SAVEPOINT before_payment;
+Removes the savepoint while keeping the transaction active.
+
+BEGIN; UPDATE products SET stock = stock - 1 WHERE id = 10 AND stock > 0; COMMIT;
+Atomically decreases stock only when stock is available and commits the change.
+
+BEGIN; UPDATE accounts SET balance = balance - 100 WHERE id = 1; UPDATE accounts SET balance = balance + 100 WHERE id = 2; COMMIT;
+Transfers money between two accounts atomically when both updates succeed.
+
+48. Row Locks & Concurrency
+
+SELECT * FROM products WHERE id = 10 FOR UPDATE;
+Locks selected product rows so concurrent transactions cannot update them until the transaction ends.
+
+SELECT * FROM products WHERE id = 10 FOR NO KEY UPDATE;
+Takes a row lock that prevents conflicting updates to the row.
+
+SELECT * FROM products WHERE id = 10 FOR SHARE;
+Takes a shared row lock that prevents conflicting changes.
+
+SELECT * FROM jobs WHERE status = 'pending' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 10;
+Selects available jobs while skipping jobs already locked by another worker.
+
+LOCK TABLE users IN SHARE MODE;
+Acquires a table-level shared lock on users.
+
+49. Safe Counters
+
+UPDATE products SET stock = stock - 1 WHERE id = 10 AND stock > 0 RETURNING *;
+Atomically decreases stock only when at least one item exists.
+
+UPDATE accounts SET balance = balance - 100 WHERE id = 1 AND balance >= 100 RETURNING *;
+Atomically withdraws money only when the account has enough balance.
+
+SELECT stock FROM products WHERE id = 10 FOR UPDATE;
+Reads and locks a product row for safe transactional stock modification.
+
+50. Views
+
+CREATE VIEW active_users AS SELECT id, name, email FROM users WHERE age >= 18;
+Creates a reusable virtual table of adult users.
+
+SELECT * FROM active_users;
+Reads from the active_users view.
+
+CREATE OR REPLACE VIEW active_users AS SELECT id, name, email, age FROM users WHERE age >= 18;
+Replaces the existing view definition.
+
+DROP VIEW active_users;
+Deletes the view.
+
+CREATE MATERIALIZED VIEW monthly_sales AS SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS sales FROM orders GROUP BY 1;
+Creates a physically stored query result for repeated analytical queries.
+
+REFRESH MATERIALIZED VIEW monthly_sales;
+Rebuilds the materialized view using current underlying data.
+
+DROP MATERIALIZED VIEW monthly_sales;
+Deletes the materialized view.
+
+51. Functions
+
+CREATE OR REPLACE FUNCTION add_numbers(a INT, b INT) RETURNS INT LANGUAGE SQL AS $$ SELECT a + b; $$;
+Creates a SQL function that returns the sum of two integers.
+
+SELECT add_numbers(10, 20);
+Calls add_numbers and returns 30.
+
+CREATE OR REPLACE FUNCTION get_user_count() RETURNS BIGINT LANGUAGE SQL AS $$ SELECT COUNT(*) FROM users; $$;
+Creates a function that returns the current user count.
+
+SELECT get_user_count();
+Calls the user-count function.
+
+CREATE OR REPLACE FUNCTION user_age_category(user_age INT) RETURNS TEXT LANGUAGE SQL AS $$ SELECT CASE WHEN user_age >= 18 THEN 'adult' ELSE 'minor' END; $$;
+Creates a function that converts an age into an adult/minor category.
+
+SELECT user_age_category(age) FROM users;
+Calls the custom age-category function for every user.
+
+52. Procedures
+
+CREATE OR REPLACE PROCEDURE increase_stock(product_id BIGINT, amount INT) LANGUAGE SQL AS $$ UPDATE products SET stock = stock + amount WHERE id = product_id; $$;
+Creates a stored procedure that increases product stock.
+
+CALL increase_stock(10, 5);
+Executes the procedure and adds five units to product 10.
+
+53. Triggers
+
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER LANGUAGE PLPGSQL AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$;
+Creates a trigger function that updates updated_at before a row changes.
+
+CREATE TRIGGER users_set_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+Automatically updates updated_at before every user update.
+
+DROP TRIGGER users_set_updated_at ON users;
+Removes the trigger from users.
+
+54. JSON / JSONB
+
+SELECT '{"name":"Alice","age":25}'::jsonb;
+Converts JSON text into PostgreSQL JSONB.
+
+SELECT data->'profile' FROM accounts;
+Returns the profile JSON object.
+
+SELECT data->>'name' FROM accounts;
+Returns the name JSON value as text.
+
+SELECT data->'address'->>'city' FROM accounts;
+Extracts a nested city value from JSONB.
+
+SELECT * FROM accounts WHERE data @> '{"role":"admin"}';
+Returns rows whose JSONB data contains the specified structure.
+
+UPDATE accounts SET data = jsonb_set(data, '{role}', '"admin"') WHERE id = 1;
+Updates the role field inside a JSONB document.
+
+SELECT jsonb_array_elements(data->'roles') FROM accounts;
+Expands a JSONB array into separate rows.
+
+SELECT data ? 'phone' FROM accounts;
+Checks whether a JSONB object contains a phone key.
+
+55. Arrays
+
+SELECT ARRAY[1, 2, 3];
+Creates and returns a PostgreSQL integer array.
+
+SELECT tags[1] FROM posts;
+Returns the first element of the tags array.
+
+SELECT * FROM posts WHERE 'sql' = ANY(tags);
+Returns posts whose tags array contains sql.
+
+UPDATE posts SET tags = array_append(tags, 'postgresql') WHERE id = 1;
+Appends postgresql to a tags array.
+
+SELECT unnest(tags) FROM posts;
+Expands array elements into separate rows.
+
+56. NULL Handling
+
+SELECT COALESCE(phone, 'Unknown') FROM users;
+Returns phone when present or Unknown when it is NULL.
+
+SELECT NULLIF(status, 'unknown') FROM orders;
+Converts unknown status values into NULL.
+
+SELECT COUNT(*) FILTER (WHERE phone IS NULL) FROM users;
+Counts users whose phone number is missing.
+
+SELECT CASE WHEN phone IS NULL THEN 'missing' ELSE 'available' END FROM users;
+Labels users according to whether a phone number exists.
+
+SELECT * FROM users WHERE age IS DISTINCT FROM 18;
+Returns rows whose age differs from 18 while treating NULL as a comparable value.
+
+SELECT * FROM users WHERE age IS NOT DISTINCT FROM 18;
+Returns rows whose age equals 18 using PostgreSQL's NULL-safe comparison.
+
+57. Type Casting
+
+SELECT '123'::INT;
+Converts the string 123 into an integer.
+
+SELECT CAST('123' AS INT);
+Converts the string 123 into an integer using standard CAST syntax.
+
+SELECT price::NUMERIC(12,2) FROM products;
+Converts price values to numeric with two decimal places.
+
+SELECT created_at::DATE FROM orders;
+Converts timestamps into dates.
+
+SELECT 10::TEXT;
+Converts an integer into text.
+
+58. Temporary Tables
+
+CREATE TEMP TABLE temp_users AS SELECT * FROM users WHERE age >= 18;
+Creates a temporary table containing adult users for the current session.
+
+CREATE TEMP TABLE temp_totals (user_id BIGINT, total NUMERIC);
+Creates an empty temporary table for session-specific calculations.
+
+DROP TABLE temp_users;
+Deletes the temporary table.
+
+59. Pagination
+
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;
+Returns page 3 using offset pagination with 20 rows per page.
+
+SELECT * FROM users WHERE id > 100 ORDER BY id ASC LIMIT 20;
+Returns the next 20 users after ID 100 using keyset pagination.
+
+SELECT * FROM users WHERE (created_at, id) < ('2026-01-01', 500) ORDER BY created_at DESC, id DESC LIMIT 20;
+Returns the next cursor page using a timestamp-plus-ID keyset.
+
+SELECT * FROM users ORDER BY id DESC FETCH FIRST 10 ROWS ONLY;
+Returns the first ten rows after descending ID order using standard SQL syntax.
+
+60. Search
+
+SELECT * FROM users WHERE name ILIKE '%john%';
+Performs a case-insensitive substring search.
+
+SELECT to_tsvector('english', name) @@ plainto_tsquery('english', 'john');
+Checks whether a name matches a PostgreSQL full-text query.
+
+CREATE INDEX idx_users_name_fts ON users USING GIN (to_tsvector('english', name));
+Creates a GIN index to accelerate full-text searches.
+
+SELECT * FROM users WHERE to_tsvector('english', name) @@ plainto_tsquery('english', 'software engineer');
+Returns users whose text matches the full-text search query.
+
+61. Roles & Permissions
+
+CREATE ROLE app_user LOGIN PASSWORD 'change_this_password';
+Creates a login role for an application.
+
+CREATE ROLE reporting_user;
+Creates a database role intended for reporting.
+
+GRANT CONNECT ON DATABASE myapp TO app_user;
+Allows app_user to connect to the database.
+
+GRANT USAGE ON SCHEMA app TO app_user;
+Allows app_user to access objects in the app schema.
+
+GRANT SELECT ON users TO reporting_user;
+Allows reporting_user to read users.
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON users TO app_user;
+Allows app_user to perform common CRUD operations on users.
+
+REVOKE DELETE ON users FROM app_user;
+Removes DELETE permission from app_user.
+
+GRANT SELECT ON ALL TABLES IN SCHEMA app TO reporting_user;
+Grants read access to all current tables in the app schema.
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT ON TABLES TO reporting_user;
+Automatically grants SELECT on future tables created in the app schema.
+
+62. Sequences & Identity
+
+SELECT nextval('users_id_seq');
+Advances the users sequence and returns the new sequence value.
+
+SELECT currval('users_id_seq');
+Returns the current sequence value for the session.
+
+SELECT setval('users_id_seq', 100);
+Sets the sequence value to 100.
+
+CREATE TABLE audit_logs (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, message TEXT);
+Creates a table using a modern PostgreSQL identity column.
+
+63. Schema Inspection
+
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+Lists tables in the public schema.
+
+SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users';
+Returns column names, data types, and nullability for users.
+
+SELECT constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_name = 'users';
+Lists constraints on users.
+
+SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'users';
+Lists indexes and their definitions for users.
+
+SELECT pg_size_pretty(pg_total_relation_size('users'));
+Returns the total disk size of users in human-readable form.
+
+SELECT pg_size_pretty(pg_database_size(current_database()));
+Returns the current database size in human-readable form.
+
+64. Database Monitoring
+
+SELECT pg_backend_pid();
+Returns the current PostgreSQL backend process ID.
+
+SELECT pid, usename, state, query FROM pg_stat_activity;
+Returns PostgreSQL sessions and their current queries.
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid = 12345;
+Terminates the PostgreSQL backend with the specified PID.
+
+SELECT version();
+Returns the PostgreSQL server version.
+
+SHOW max_connections;
+Returns the configured maximum number of database connections.
+
+SHOW work_mem;
+Returns the memory available for internal query operations.
+
+65. Transaction Isolation
+
+SHOW transaction_isolation;
+Returns the current transaction isolation level.
+
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+Sets the current transaction to READ COMMITTED.
+
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+Makes reads within the transaction use a consistent snapshot.
+
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+Uses the strictest standard isolation level to prevent serialization anomalies.
+
+66. Real-World Reporting
+
+SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS orders, SUM(total) AS revenue FROM orders GROUP BY 1 ORDER BY 1;
+Returns monthly order count and revenue.
+
+SELECT user_id, SUM(total) AS revenue FROM orders WHERE status = 'paid' GROUP BY user_id ORDER BY revenue DESC;
+Ranks users by paid-order revenue.
+
+SELECT product_id, SUM(quantity) AS units_sold FROM order_items GROUP BY product_id ORDER BY units_sold DESC;
+Ranks products by units sold.
+
+SELECT d.name, COUNT(e.id) AS employee_count, AVG(e.salary) AS avg_salary FROM departments d LEFT JOIN employees e ON e.department_id = d.id GROUP BY d.id, d.name;
+Returns employee count and average salary for every department.
+
+SELECT status, COUNT() AS count, ROUND(100.0 * COUNT() / SUM(COUNT(*)) OVER (), 2) AS percentage FROM orders GROUP BY status;
+Returns each order status count and percentage of all orders.
+
+67. Advanced Business Queries
+
+SELECT u.id, u.name, COALESCE(SUM(o.total), 0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id GROUP BY u.id, u.name;
+Returns every user with total spending including users who have never ordered.
+
+SELECT p.name, SUM(oi.quantity * oi.price) AS revenue FROM products p JOIN order_items oi ON oi.product_id = p.id GROUP BY p.id, p.name ORDER BY revenue DESC;
+Ranks products by generated revenue.
+
+SELECT user_id, SUM(total) AS total_spent, RANK() OVER (ORDER BY SUM(total) DESC) AS spending_rank FROM orders GROUP BY user_id;
+Ranks users by total spending.
+
+SELECT DATE(created_at) AS day, COUNT() AS orders, SUM(COUNT()) OVER (ORDER BY DATE(created_at)) AS cumulative_orders FROM orders GROUP BY DATE(created_at);
+Returns daily orders and cumulative orders.
+
+SELECT user_id, created_at, total, SUM(total) OVER (PARTITION BY user_id ORDER BY created_at) AS running_spend FROM orders;
+Returns each order with that user's running lifetime spending.
+
+WITH ranked AS (SELECT e.*, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rnk FROM employees e) SELECT * FROM ranked WHERE rnk = 1;
+Returns the highest-paid employee or employees in each department including ties.
+
+68. Advanced Subquery Patterns
+
+SELECT * FROM users u WHERE (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) >= 5;
+Returns users who have placed at least five orders.
+
+SELECT * FROM users u WHERE (SELECT COALESCE(SUM(total), 0) FROM orders o WHERE o.user_id = u.id) > 10000;
+Returns users whose total spending exceeds 10000.
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.status = 'paid') AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.status = 'cancelled');
+Returns users with at least one paid order and no cancelled orders.
+
+SELECT o.* FROM orders o WHERE o.total = (SELECT MAX(o2.total) FROM orders o2 WHERE o2.user_id = o.user_id);
+Returns each user's highest-value order including ties.
+
+SELECT p.* FROM products p WHERE p.price > (SELECT AVG(p2.price) FROM products p2 WHERE p2.category_id = p.category_id);
+Returns products priced above their category average.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) x WHERE spent > 5000);
+Returns users whose aggregated spending exceeds 5000.
+
+SELECT * FROM employees WHERE salary > (SELECT AVG(dept_avg) FROM (SELECT department_id, AVG(salary) AS dept_avg FROM employees GROUP BY department_id) x);
+Returns employees earning more than the average of department-average salaries.
+
+69. Advanced CTE Business Logic
+
+WITH eligible_users AS (SELECT id FROM users WHERE age >= 18), user_spending AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id), qualified AS (SELECT e.id, s.spent FROM eligible_users e JOIN user_spending s ON s.user_id = e.id WHERE s.spent >= 5000) SELECT u.name, q.spent FROM qualified q JOIN users u ON u.id = q.id;
+Builds a multi-step pipeline identifying adult users who have spent at least 5000.
+
+WITH paid_orders AS (SELECT * FROM orders WHERE status = 'paid'), customer_totals AS (SELECT user_id, SUM(total) AS spent FROM paid_orders GROUP BY user_id), ranked AS (SELECT *, RANK() OVER (ORDER BY spent DESC) AS rank FROM customer_totals) SELECT * FROM ranked WHERE rank <= 10;
+Filters paid orders, calculates customer spending, ranks customers, and returns the top ten.
+
+WITH monthly_sales AS (SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS revenue FROM orders WHERE status = 'paid' GROUP BY 1), ranked AS (SELECT month, revenue, RANK() OVER (ORDER BY revenue DESC) AS rank FROM monthly_sales) SELECT * FROM ranked ORDER BY month;
+Builds monthly revenue and ranks each month by revenue.
+
+WITH monthly_sales AS (SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS revenue FROM orders WHERE status = 'paid' GROUP BY 1), stats AS (SELECT *, LAG(revenue) OVER (ORDER BY month) AS previous_revenue FROM monthly_sales) SELECT month, revenue, previous_revenue, revenue - previous_revenue AS growth FROM stats;
+Calculates monthly revenue and change from the previous month.
+
+70. Advanced CTE Analytics
+
+WITH daily AS (SELECT DATE(created_at) AS day, SUM(total) AS revenue FROM orders GROUP BY 1) SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS cumulative_revenue FROM daily;
+Returns daily revenue and cumulative revenue.
+
+WITH yearly AS (SELECT EXTRACT(YEAR FROM created_at) AS year, SUM(total) AS revenue FROM orders GROUP BY 1) SELECT year, revenue, LAG(revenue) OVER (ORDER BY year) AS previous_year FROM yearly;
+Returns yearly revenue with the previous year's revenue.
+
+WITH yearly AS (SELECT EXTRACT(YEAR FROM created_at) AS year, SUM(total) AS revenue FROM orders GROUP BY 1) SELECT year, revenue, revenue - LAG(revenue) OVER (ORDER BY year) AS growth FROM yearly;
+Calculates year-over-year revenue change.
+
+WITH monthly AS (SELECT DATE_TRUNC('month', created_at) AS month, SUM(total) AS revenue FROM orders GROUP BY 1), stats AS (SELECT *, AVG(revenue) OVER () AS avg_monthly_revenue FROM monthly) SELECT * FROM stats WHERE revenue > avg_monthly_revenue;
+Returns months whose revenue is above average monthly revenue.
+
+71. Data Cleanup with CTE
+
+WITH normalized AS (SELECT id, LOWER(TRIM(email)) AS clean_email FROM users) UPDATE users u SET email = n.clean_email FROM normalized n WHERE u.id = n.id;
+Normalizes stored email addresses by trimming whitespace and converting them to lowercase.
+
+WITH duplicate_emails AS (SELECT email FROM users GROUP BY email HAVING COUNT(*) > 1) SELECT * FROM users WHERE email IN (SELECT email FROM duplicate_emails);
+Finds users whose emails belong to a duplicate-email group.
+
+WITH duplicates AS (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn FROM users) DELETE FROM users WHERE id IN (SELECT id FROM duplicates WHERE rn > 1);
+Deletes duplicate users while keeping the first row for each email.
+
+72. LATERAL + Latest Records
+
+SELECT u.id, u.name, o.* FROM users u LEFT JOIN LATERAL (SELECT * FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 1) o ON TRUE;
+Returns every user together with their latest order.
+
+SELECT u.id, u.name, o.* FROM users u LEFT JOIN LATERAL (SELECT * FROM orders o WHERE o.user_id = u.id ORDER BY o.created_at DESC LIMIT 5) o ON TRUE;
+Returns every user together with up to five latest orders.
+
+73. Complex "Every" Condition
+
+SELECT u.id, u.name FROM users u WHERE NOT EXISTS (SELECT 1 FROM products p WHERE p.category_id = 10 AND NOT EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.user_id = u.id AND oi.product_id = p.id));
+Returns customers who have purchased every product in category 10.
+
+SELECT u.id, u.name FROM users u WHERE NOT EXISTS (SELECT 1 FROM categories c WHERE NOT EXISTS (SELECT 1 FROM orders o JOIN order_items oi ON oi.order_id = o.id JOIN products p ON p.id = oi.product_id WHERE o.user_id = u.id AND p.category_id = c.id));
+Returns users who have purchased at least one product from every category.
+
+74. Safe Existence Checks
+
+SELECT EXISTS (SELECT 1 FROM users WHERE email = 'a@example.com');
+Returns true or false depending on whether a matching user exists.
+
+SELECT 1 FROM users WHERE email = 'a@example.com' LIMIT 1;
+Returns one matching row if the user exists.
+
+SELECT COUNT(*) > 0 FROM users WHERE email = 'a@example.com';
+Returns true when at least one matching user exists.
+
+SELECT u.id FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users having at least one related order.
+
+75. SQL Execution Order Example
+
+SELECT department_id, AVG(salary) AS avg_salary FROM employees WHERE salary > 30000 GROUP BY department_id HAVING AVG(salary) > 50000 ORDER BY avg_salary DESC LIMIT 5;
+Filters rows, groups them, filters groups, sorts the result, and finally limits it to five rows.
+
+76. Useful Operators
+
+SELECT 5 = 5;
+Returns true because the values are equal.
+
+SELECT 5 <> 3;
+Returns true because the values are different.
+
+SELECT 5 > 3;
+Returns true because 5 is greater than 3.
+
+SELECT 5 BETWEEN 1 AND 10;
+Returns true because 5 is inside the inclusive range.
+
+SELECT 5 IN (1, 3, 5);
+Returns true because 5 appears in the list.
+
+SELECT 'hello' ILIKE '%ELL%';
+Returns true because ILIKE performs case-insensitive matching.
+
+SELECT ARRAY[1,2,3] @> ARRAY[2];
+Returns true because the first array contains the second array.
+
+SELECT '{"role":"admin"}'::jsonb @> '{"role":"admin"}';
+Returns true because the left JSONB object contains the right structure.
+
+77. ENUM
+
+CREATE TYPE order_status AS ENUM ('pending', 'paid', 'cancelled', 'completed');
+Creates a PostgreSQL enum type containing allowed order statuses.
+
+ALTER TYPE order_status ADD VALUE 'refunded';
+Adds refunded to the existing enum.
+
+DROP TYPE order_status;
+Deletes the enum type when nothing depends on it.
+
+78. Soft Delete
+
+UPDATE users SET deleted_at = NOW() WHERE id = 10;
+Soft-deletes a user by recording a deletion timestamp.
+
+SELECT * FROM users WHERE deleted_at IS NULL;
+Returns only users who have not been soft-deleted.
+
+CREATE INDEX idx_users_active ON users(id) WHERE deleted_at IS NULL;
+Creates a partial index containing only active users.
+
+UPDATE users SET deleted_at = NULL WHERE id = 10;
+Restores a soft-deleted user.
+
+79. Sequence / Identity
+
+SELECT nextval('users_id_seq');
+Advances the users sequence and returns the new value.
+
+SELECT currval('users_id_seq');
+Returns the current sequence value for the session.
+
+SELECT setval('users_id_seq', 100);
+Sets the sequence value to 100.
+
+CREATE TABLE audit_logs (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, message TEXT);
+Creates a table using a PostgreSQL identity column.
+
+80. Security
+
+CREATE ROLE readonly_user LOGIN PASSWORD 'change_this_password';
+Creates a login role intended for read-only access.
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+Grants read access to current public-schema tables.
+
+REVOKE ALL ON users FROM PUBLIC;
+Removes default PUBLIC privileges from users.
+
+GRANT USAGE, SELECT ON SEQUENCE users_id_seq TO app_user;
+Allows app_user to use the users ID sequence.
+
+SELECT current_user;
+Returns the PostgreSQL role currently executing the query.
+
+SELECT session_user;
+Returns the role that originally started the session.
+
+81. Important Software Engineering Patterns
+
+SELECT * FROM users WHERE email = 'a@example.com' LIMIT 1;
+Returns at most one user matching the email.
+
+SELECT id FROM users WHERE email = 'a@example.com' FOR UPDATE;
+Finds and locks a user row for safe modification inside a transaction.
+
+UPDATE users SET updated_at = NOW() WHERE id = 1 RETURNING id, updated_at;
+Updates a timestamp and immediately returns the changed values.
+
+SELECT * FROM orders WHERE status = ANY(ARRAY['pending','paid']);
+Returns orders whose status matches any value in the PostgreSQL array.
+
+SELECT * FROM users WHERE id = ANY(ARRAY[1,2,3]);
+Returns users whose IDs appear in the array.
+
+INSERT INTO audit_logs (message) VALUES ('User created');
+Creates an audit-log record for an application event.
+
+82. Important SQL Concepts to Master
+
+SELECT * FROM users;
+Basic SELECT and projection.
+
+SELECT * FROM users WHERE age >= 18;
+Filtering with WHERE.
+
+SELECT * FROM users ORDER BY created_at DESC LIMIT 20;
+Sorting and limiting.
+
+SELECT department_id, COUNT(*) FROM employees GROUP BY department_id;
+Aggregation and grouping.
+
+SELECT department_id, COUNT() FROM employees GROUP BY department_id HAVING COUNT() > 5;
+Filtering grouped results.
+
+SELECT u.* FROM users u JOIN orders o ON o.user_id = u.id;
+Relational joins.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+Basic subquery.
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Existence-based subquery.
+
+SELECT * FROM users u WHERE (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) > 5;
+Correlated subquery.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM totals;
+Common table expression.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id), ranked AS (SELECT *, RANK() OVER (ORDER BY spent DESC) AS rank FROM totals) SELECT * FROM ranked;
+Chained CTE with a window function.
+
+WITH RECURSIVE tree AS (...) SELECT * FROM tree;
+Recursive CTE for hierarchical or iterative data.
+
+SELECT * FROM users u LEFT JOIN LATERAL (SELECT * FROM orders o WHERE o.user_id = u.id ORDER BY created_at DESC LIMIT 1) o ON TRUE;
+LATERAL query for per-row top-N related data.
+
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'a@example.com';
+Measures the actual execution plan and runtime.
+
+BEGIN;
+Starts a transaction.
+
+COMMIT;
+Commits a transaction.
+
+ROLLBACK;
+Rolls back a transaction.
+
+CREATE INDEX idx_users_email ON users(email);
+Creates an index to improve suitable lookup queries.
+
+ALTER TABLE users ADD COLUMN phone TEXT;
+Changes an existing table structure.
+
+83. Subquery vs CTE — What to Understand
+
+SELECT * FROM users WHERE age > (SELECT AVG(age) FROM users);
+Uses a subquery when a calculation is simple and needed only once.
+
+WITH average_age AS (SELECT AVG(age) AS value FROM users) SELECT * FROM users WHERE age > (SELECT value FROM average_age);
+Uses a CTE to give an intermediate result a meaningful name.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT u.name, totals.spent FROM users u JOIN totals ON totals.user_id = u.id;
+Uses a CTE when an intermediate result makes a complex query easier to read.
+
+SELECT u.name, (SELECT SUM(total) FROM orders o WHERE o.user_id = u.id) FROM users u;
+Uses a correlated subquery when the calculation directly depends on each outer row.
+
+SELECT u.* FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Uses EXISTS when the real question is whether a related record exists.
+
+84. Advanced SQL Mental Model
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Ask what the outer query returns and what relationship the inner query is checking.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+Ask whether the inner query produces a set of values that the outer query can compare against.
+
+SELECT name, (SELECT COUNT(*) FROM orders) FROM users;
+Ask whether the subquery returns exactly one value because scalar subqueries must produce one row.
+
+SELECT * FROM users u WHERE (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) > 5;
+Recognize this as a correlated subquery because the inner query references the outer row.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM totals;
+Recognize WITH as a way to name an intermediate query result.
+
+WITH RECURSIVE tree AS (...) SELECT * FROM tree;
+Recognize recursive CTEs as the SQL pattern for trees, hierarchies, graphs, and iterative generation.
+
+85. SQL Performance Checklist
+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 10;
+Use EXPLAIN ANALYZE to inspect actual query execution.
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+Index columns commonly used for selective filtering and joins.
+
+CREATE INDEX idx_orders_user_created ON orders(user_id, created_at DESC);
+Use a composite index when queries commonly filter by user and sort by creation time.
+
+SELECT * FROM users WHERE id > 100 ORDER BY id LIMIT 20;
+Prefer keyset pagination for large datasets instead of large OFFSET values.
+
+SELECT EXISTS (SELECT 1 FROM orders WHERE user_id = 10);
+Use EXISTS when only existence matters.
+
+SELECT * FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Prefer NOT EXISTS over NOT IN when NULL behavior could matter.
+
+SELECT id, name FROM users;
+Select only required columns instead of unnecessarily using SELECT * in production APIs.
+
+SELECT * FROM orders WHERE created_at >= NOW() - INTERVAL '30 days';
+Use index-friendly range predicates for time-based filtering.
+
+86. Core Interview Patterns
+
+SELECT MAX(salary) FROM employees;
+Returns the highest salary.
+
+SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees);
+Returns the second-highest distinct salary.
+
+SELECT * FROM employees e WHERE salary > (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department_id = e.department_id);
+Returns employees earning above their department average.
+
+WITH ranked AS (SELECT e.*, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn FROM employees e) SELECT * FROM ranked WHERE rn <= 3;
+Returns the top three salary ranks in every department.
+
+SELECT u.* FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Returns users who never placed an order.
+
+SELECT p.* FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id);
+Returns products that were never sold.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM totals WHERE spent > (SELECT AVG(spent) FROM totals);
+Returns users whose spending is above the average spending of users with orders.
+
+WITH duplicates AS (SELECT id, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn FROM users) DELETE FROM users WHERE id IN (SELECT id FROM duplicates WHERE rn > 1);
+Deletes duplicate records while preserving one row per email.
+
+SELECT d.id, d.name, e.* FROM departments d LEFT JOIN LATERAL (SELECT * FROM employees e WHERE e.department_id = d.id ORDER BY salary DESC LIMIT 3) e ON TRUE;
+Returns the top three employees for every department.
+
+WITH RECURSIVE org AS (SELECT id, manager_id, name, 0 AS level FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.id, e.manager_id, e.name, org.level + 1 FROM employees e JOIN org ON e.manager_id = org.id) SELECT * FROM org;
+Traverses an organizational hierarchy recursively.
+
+87. Final SQL Skill Map
+
+SELECT * FROM users;
+Master basic SELECT.
+
+INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+Master INSERT.
+
+UPDATE users SET name = 'Alice' WHERE id = 1;
+Master UPDATE.
+
+DELETE FROM users WHERE id = 1;
+Master DELETE.
+
+SELECT * FROM users u JOIN orders o ON o.user_id = u.id;
+Master JOINs.
+
+SELECT user_id, COUNT(*) FROM orders GROUP BY user_id;
+Master GROUP BY.
+
+SELECT user_id, COUNT() FROM orders GROUP BY user_id HAVING COUNT() > 5;
+Master HAVING.
+
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+Master non-correlated subqueries.
+
+SELECT * FROM users u WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+Master EXISTS.
+
+SELECT * FROM users u WHERE (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) > 5;
+Master correlated subqueries.
+
+WITH totals AS (SELECT user_id, SUM(total) AS spent FROM orders GROUP BY user_id) SELECT * FROM totals;
+Master basic CTEs.
+
+WITH a AS (...), b AS (...) SELECT * FROM b;
+Master multiple and chained CTEs.
+
+WITH ranked AS (...) SELECT * FROM ranked WHERE rn <= 3;
+Master CTE + window-function patterns.
+
+WITH RECURSIVE tree AS (...) SELECT * FROM tree;
+Master recursive CTEs.
+
+SELECT * FROM users u LEFT JOIN LATERAL (...) x ON TRUE;
+Master LATERAL for per-row subqueries.
+
+CREATE INDEX idx_users_email ON users(email);
+Understand indexes.
+
+EXPLAIN ANALYZE SELECT ...;
+Understand query plans and performance.
+
+BEGIN; ... COMMIT;
+Understand transactions.
+
+SELECT ... FOR UPDATE;
+Understand row locking and concurrency.
+
+CREATE OR REPLACE FUNCTION ...;
+Understand database-side functions.
+
+CREATE TRIGGER ...;
+Understand database triggers.
+
+SELECT data->>'name' FROM accounts;
+Understand JSONB querying.
+
+GRANT SELECT ON users TO readonly_user;
+Understand database permissions.
+
+ALTER TABLE users ADD COLUMN phone TEXT;
+Understand schema evolution.
+
+VACUUM ANALYZE users;
+Understand basic PostgreSQL maintenance.
