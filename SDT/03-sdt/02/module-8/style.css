@@ -1,0 +1,192 @@
+body {
+  background: #f5f7f9;
+  color: #212529;
+}
+
+.page-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 20px 50px;
+}
+
+.search-area {
+  max-width: 1400px;
+  margin: 0 auto 30px;
+}
+
+.search-input {
+  height: 48px;
+  border-radius: 8px;
+}
+
+.search-btn {
+  height: 48px;
+  min-width: 100px;
+  border: 1px solid #e2c75d;
+  background: #fffdf4;
+  color: #343434;
+}
+
+.search-btn:hover {
+  background: #fff8d9;
+  border-color: #d6b63d;
+}
+
+.cocktail-card {
+  height: 100%;
+  border: 1px solid #e1e1e1;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.06);
+}
+
+.cocktail-card img {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
+.cocktail-card .card-body {
+  padding: 16px;
+}
+
+.cocktail-card .card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.cocktail-card p {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+
+.instruction-text {
+  overflow: hidden;
+  min-height: 50px;
+}
+
+.already-selected {
+  background: #adb5bd !important;
+  border-color: #adb5bd !important;
+  color: #fff !important;
+  cursor: not-allowed !important;
+}
+
+.details-btn {
+  border-color: #7ba99f;
+  color: #5d9187;
+}
+
+.details-btn:hover {
+  background: #5d9187;
+  color: #fff;
+}
+
+.cart-card {
+  background: #fff;
+  border: 1px solid #e1e1e1;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 20px;
+}
+
+.cart-title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.cart-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #6c757d;
+  color: #fff;
+  font-size: 16px;
+}
+
+.cart-table {
+  margin-bottom: 0;
+  vertical-align: middle;
+}
+
+.cart-table th {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cart-table td,
+.cart-table th {
+  padding: 16px 8px;
+}
+
+.cart-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.empty-cart {
+  color: #6c757d;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.loading-box,
+.error-box {
+  padding: 32px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+}
+
+.modal-img {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.ingredient-list li {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 992px) {
+  .cart-card {
+    position: static;
+  }
+
+  .cocktail-card img {
+    height: 220px;
+  }
+}
+
+@media (max-width: 575px) {
+  .page-wrapper {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .cocktail-card img {
+    height: 240px;
+  }
+
+  .cart-table {
+    font-size: 14px;
+  }
+
+  .cart-img {
+    width: 42px;
+    height: 42px;
+  }
+}
