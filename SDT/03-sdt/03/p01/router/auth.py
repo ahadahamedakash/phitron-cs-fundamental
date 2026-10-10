@@ -6,6 +6,9 @@ from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from database import SessionLocal
 from typing import Annotated, Optional
+from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta, datetime, timezone
+from jose import jwt
 
 router = APIRouter()
 
@@ -21,6 +24,26 @@ class Register(BaseModel):
     role = str
 
 
+def authenticate_user(username, password, db):
+    user = db.query(Users).filter(Users.username == username).first()
+
+    if user is None:
+        return False
+
+    if bcrypt_context.verify(password, user.password):
+        return user
+
+    return False
+
+
+def generate_access_token(username: str, user_id: int, expires_delta: timedelta):
+    encode = {"sub": username, "id": user_id}
+    expires = datetime.now(timezone.utc) + expires_delta
+    encode.update({"exp": expires})
+
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 def get_db():
     db = SessionLocal()
 
@@ -31,6 +54,9 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
+
+SECRET_KEY = "e661e2cafa43bc6bd0a971ace102c4f70bbb98d3a03274d0c71212d6c5c8550c"
+ALGORITHM = "HS256"
 
 
 @router.post("/register")
@@ -51,3 +77,16 @@ def register(db: db_dependency, data: Register):
     return JSONResponse(
         status_code=201, content={"message": "Registration successful!"}
     )
+
+
+@router.post("/login")
+def register(db: db_dependency, data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+
+    user = authenticate_user(data.username, data.password, db)
+
+    if not user:
+        return JSONResponse(status_code=403, content={"message": "Unauthorized user!"})
+
+    token = generate_access_token(user.username, user.id, timedelta(minutes=30))
+
+    return {"access_token": token, "token_type": "bearer"}
