@@ -6,13 +6,17 @@ from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from database import SessionLocal
 from typing import Annotated, Optional
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from datetime import timedelta, datetime, timezone
 from jose import jwt
 
 router = APIRouter()
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="login")
+
+SECRET_KEY = "e661e2cafa43bc6bd0a971ace102c4f70bbb98d3a03274d0c71212d6c5c8550c"
+ALGORITHM = "HS256"
 
 
 class Register(BaseModel):
@@ -36,12 +40,32 @@ def authenticate_user(username, password, db):
     return False
 
 
-def generate_access_token(username: str, user_id: int, expires_delta: timedelta):
-    encode = {"sub": username, "id": user_id}
+def generate_access_token(
+    username: str, user_id: int, role: str, expires_delta: timedelta
+):
+    encode = {"sub": username, "id": user_id, "role": role}
+
     expires = datetime.now(timezone.utc) + expires_delta
+
     encode.update({"exp": expires})
 
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        username: str = payload.get("sub")
+        user_id: int = payload.get("id")
+        role: str = payload.get("role")
+
+        if username is None or user_id is None:
+            raise HTTPException(status_code=404, detail="User not found!")
+
+        return {"username": username, "id": user_id, "role": role}
+    except:
+        raise HTTPException(status_code=404, detail="User not found!")
 
 
 def get_db():
@@ -54,9 +78,6 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
-
-SECRET_KEY = "e661e2cafa43bc6bd0a971ace102c4f70bbb98d3a03274d0c71212d6c5c8550c"
-ALGORITHM = "HS256"
 
 
 @router.post("/register")
@@ -87,6 +108,8 @@ def register(db: db_dependency, data: Annotated[OAuth2PasswordRequestForm, Depen
     if not user:
         return JSONResponse(status_code=403, content={"message": "Unauthorized user!"})
 
-    token = generate_access_token(user.username, user.id, timedelta(minutes=30))
+    token = generate_access_token(
+        user.username, user.id, user.role, timedelta(minutes=30)
+    )
 
     return {"access_token": token, "token_type": "bearer"}

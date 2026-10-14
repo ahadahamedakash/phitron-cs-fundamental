@@ -6,7 +6,8 @@ from models import Todos
 from database import engine, SessionLocal
 from typing import Annotated, Optional
 from fastapi.responses import JSONResponse
-from router import auth
+from router import auth, admin
+from router.auth import get_current_user
 
 app = FastAPI()
 
@@ -27,6 +28,7 @@ class UpdateTodo(BaseModel):
 
 models.Base.metadata.create_all(bind=engine)
 app.include_router(auth.router)
+app.include_router(admin.router)
 
 
 def get_db():
@@ -39,16 +41,28 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
 @app.get("/")
-def read_todos(db: db_dependency):
-    return db.query(Todos).all()
+def read_todos(user: user_dependency, db: db_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized!")
+
+    return db.query(Todos).filter(Todos.owner_id == user.get("id")).all()
 
 
 @app.get("/todos/{id}")
-def read_todos_by_id(db: db_dependency, id: int):
-    current_data = db.query(Todos).filter(Todos.id == id).first()
+def read_todos_by_id(user: user_dependency, db: db_dependency, id: int):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized!")
+
+    current_data = (
+        db.query(Todos)
+        .filter(Todos.owner_id == user.get("id"))
+        .filter(Todos.id == id)
+        .first()
+    )
 
     if current_data is not None:
         return current_data
@@ -57,9 +71,11 @@ def read_todos_by_id(db: db_dependency, id: int):
 
 
 @app.post("/todos")
-def create_todos(db: db_dependency, data: CreateTodo):
-    current_data = Todos(**data.model_dump())
+def create_todos(user: user_dependency, db: db_dependency, data: CreateTodo):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication failed!")
 
+    current_data = Todos(**data.model_dump(), owner_id=user.get("id"))
     db.add(current_data)
     db.commit()
     db.refresh(current_data)
@@ -67,9 +83,17 @@ def create_todos(db: db_dependency, data: CreateTodo):
     return JSONResponse(status_code=201, content={"message": "Created successfully!"})
 
 
-@app.patch("/todos/{id}")
-def update_todos(db: db_dependency, id: int, data: UpdateTodo):
-    current_data = db.query(Todos).filter(Todos.id == id).first()
+@app.put("/todos/{id}")
+def update_todos(user: user_dependency, db: db_dependency, id: int, data: UpdateTodo):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication failed!")
+
+    current_data = (
+        db.query(Todos)
+        .filter(Todos.owner_id == user.get("id"))
+        .filter(Todos.id == id)
+        .first()
+    )
 
     if current_data is None:
         raise HTTPException(status_code=404, detail="No data found!")
@@ -85,8 +109,16 @@ def update_todos(db: db_dependency, id: int, data: UpdateTodo):
 
 
 @app.delete("/todos/{id}")
-def delete_todos(db: db_dependency, id: int):
-    current_data = db.query(Todos).filter(Todos.id == id).first()
+def delete_todos(user: user_dependency, db: db_dependency, id: int):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication failed!")
+
+    current_data = (
+        db.query(Todos)
+        .filter(Todos.owner_id == user.get("id"))
+        .filter(Todos.id == id)
+        .first()
+    )
 
     if current_data is None:
         raise HTTPException(status_code=404, detail="No data found!")
