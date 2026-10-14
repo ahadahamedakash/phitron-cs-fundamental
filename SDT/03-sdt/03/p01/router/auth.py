@@ -20,12 +20,13 @@ ALGORITHM = "HS256"
 
 
 class Register(BaseModel):
-    email = str
-    username = str
-    first_name = str
-    last_name = str
-    password = str
-    role = str
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    password: str
+    role: str
+    phone: str
 
 
 def authenticate_user(username, password, db):
@@ -90,6 +91,7 @@ def register(db: db_dependency, data: Register):
         hash_password=bcrypt_context.hash(data.password),
         is_active=True,
         role=data.role,
+        phone=data.phone,
     )
 
     db.add(current_data)
