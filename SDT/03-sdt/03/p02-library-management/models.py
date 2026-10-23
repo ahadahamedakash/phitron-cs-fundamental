@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime
 
 
-class User(Base):
+class Users(Base):
 
     __tablename__ = "users"
 
@@ -30,4 +30,4 @@ class Books(Base):
     total_copies = Column(Integer, default=0)
     available_copies = Column(Integer, default=0)
     cover_image = Column(String, nullable=True)
-    created_at = Column(datetime, default=datetime.now)
+    created_at = Column(DateTime, default=datetime.now)
