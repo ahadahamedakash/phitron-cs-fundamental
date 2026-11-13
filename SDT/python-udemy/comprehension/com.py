@@ -12,7 +12,7 @@ It is used to
     create a new collection
     flatten nested structure
 
-Purpost
+Purpose
     cleaner code
     faster execution
 
